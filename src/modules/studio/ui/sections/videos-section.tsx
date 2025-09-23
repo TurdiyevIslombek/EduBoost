@@ -16,8 +16,10 @@ import {
 import { useRouter } from "next/navigation";
 import { VideoThumbnail } from "@/modules/videos/ui/components/video-thumbnail";
 import { snakeCaseToTitle } from "@/lib/utils";
-import { Globe2Icon, LockIcon } from "lucide-react";
+import { Globe2Icon, LockIcon, AlertTriangle, Info } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Card, CardContent } from "@/components/ui/card";
+import { useUser } from "@clerk/nextjs";
 
 
 
@@ -96,9 +98,46 @@ const VideosSectionSuspense = () => {
   });
 
   const router = useRouter();
+  const { user } = useUser();
+
+  // Calculate total video count for limit warning (admin only)
+  const videoCount = videos.pages.reduce((acc, page) => acc + page.items.length, 0);
+  const limit = 10; // Free plan limit
+  const isAdmin = user?.emailAddresses?.[0]?.emailAddress === "turdiyevislombek01@gmail.com";
 
   return (
   <div>
+    {/* Video Limit Warning Banner (Admin Only) */}
+    {isAdmin && videoCount >= limit ? (
+      <Card className="bg-red-50/90 backdrop-blur-sm border-red-200 shadow-lg m-4">
+        <CardContent className="p-4">
+          <div className="flex items-center gap-3">
+            <AlertTriangle className="size-5 text-red-600 flex-shrink-0" />
+            <div className="flex-1">
+              <h3 className="font-semibold text-red-800">Upload Limit Reached ({videoCount}/{limit})</h3>
+              <p className="text-sm text-red-700 mt-1">
+                You&apos;ve reached the free plan limit. Delete some old videos to upload new ones.
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    ) : isAdmin && videoCount >= limit - 2 ? (
+      <Card className="bg-amber-50/90 backdrop-blur-sm border-amber-200 shadow-lg m-4">
+        <CardContent className="p-4">
+          <div className="flex items-center gap-3">
+            <Info className="size-5 text-amber-600 flex-shrink-0" />
+            <div className="flex-1">
+              <h3 className="font-semibold text-amber-800">Approaching Upload Limit ({videoCount}/{limit})</h3>
+              <p className="text-sm text-amber-700 mt-1">
+                Consider deleting old videos before uploading new ones.
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    ) : null}
+    
     <div className="border-y">
       <Table>
         <TableHeader>

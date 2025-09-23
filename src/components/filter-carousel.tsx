@@ -38,10 +38,10 @@ export const FilterCarousel = ({ value, isLoading, onSelect, data }: FilterCarou
 
 
     return (
-        <div className="relative w-full">
+        <div className="relative w-full bg-white/60 backdrop-blur-md rounded-xl p-3 shadow-sm border-0">
             <div
             className={cn(
-                "absolute left-12 top-0 bottom-0 w-12 z-10 bg-gradient-to-r from-white to-transparent pointer-events-none",
+                "absolute left-10 top-0 bottom-0 w-10 z-10 bg-gradient-to-r from-white/60 to-transparent pointer-events-none",
                 current === 1 && "hidden"
                 )}
             />
@@ -50,37 +50,36 @@ export const FilterCarousel = ({ value, isLoading, onSelect, data }: FilterCarou
               opts={{
                 align: "start",
                 dragFree: true,
-            }} className="w-full px-12">
+            }} className="w-full px-10">
                 <CarouselContent className="-ml-3">
                     {!isLoading && (
                     <CarouselItem className="pl-3 basis-auto" onClick={() => onSelect(null)}>
                         <Badge
-                            variant={!value ? "default" : "secondary"}
-                            className="cursor-pointer rounded-lg px-3 py-1 whitespace-nowrap text-sm"
-                            >
-                            All
+                        variant={!value ? "default" : "secondary"}
+                        className="cursor-pointer rounded-full px-4 py-1.5 whitespace-nowrap text-sm font-medium hover:scale-[1.02] transition-all duration-200 shadow-sm border-0"
+                        >
+                        All
                         </Badge>
                     </CarouselItem>
                     )}
                     {isLoading &&
                     Array.from({ length: 11 }).map((_, index) => (
                         <CarouselItem key={index} className="pl-3 basis-auto">
-                            <Skeleton className="rounded-lg px-3 py-1 h-full text-sm w-[100px] font-semibold">
+                            <Skeleton className="rounded-full h-8 w-20 bg-gray-200/80">
                                 &nbsp;
-
                             </Skeleton>
                         </CarouselItem>
                         ))
-                    
                     }
 
                     {!isLoading && data.map((item) => (
                         <CarouselItem key={item.value} className="pl-3 basis-auto" onClick={() => onSelect(item.value)}>
-                            <Badge variant={value === item.value ? "default" : "secondary"}
-                            className="cursor-pointer rounded-lg px-3 py-1 whitespace-nowrap text-sm">
+                            <Badge 
+                                variant={value === item.value ? "default" : "secondary"}
+                                className="cursor-pointer rounded-full px-4 py-1.5 whitespace-nowrap text-sm font-medium hover:scale-[1.02] transition-all duration-200 shadow-sm border-0"
+                            >
                                 {item.label}
                             </Badge>
-
                         </CarouselItem>
 
                     ))}
@@ -91,7 +90,7 @@ export const FilterCarousel = ({ value, isLoading, onSelect, data }: FilterCarou
             </Carousel>
             <div
             className={cn(
-                "absolute right-12 top-0 bottom-0 w-12 z-10 bg-gradient-to-l from-white to-transparent pointer-events-none",
+                "absolute right-10 top-0 bottom-0 w-10 z-10 bg-gradient-to-l from-white/60 to-transparent pointer-events-none",
                 current === count && "hidden"
                 )}
             />

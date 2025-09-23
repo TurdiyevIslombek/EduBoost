@@ -1,10 +1,13 @@
 "use client";
 
 import { Button } from "@/components/ui/button"
-import { ClapperboardIcon, UserCircleIcon, UserIcon } from "lucide-react"
-import { UserButton, SignInButton, SignedIn, SignedOut } from "@clerk/nextjs";
+import { ClapperboardIcon, UserCircleIcon, UserIcon, ShieldIcon } from "lucide-react"
+import { UserButton, SignInButton, SignedIn, SignedOut, useUser } from "@clerk/nextjs";
 
 export const AuthButton = () => {
+    const { user } = useUser();
+    const isAdmin = user?.emailAddresses?.[0]?.emailAddress === "turdiyevislombek01@gmail.com";
+
     return (
         <>
 
@@ -15,6 +18,10 @@ export const AuthButton = () => {
                     <UserButton.Link label="My profile" href="/users/current" labelIcon={<UserIcon className="size-4" />} />
 
                     <UserButton.Link label="Studio" href="/studio" labelIcon={<ClapperboardIcon className="size-4" />} />
+
+                    {isAdmin && (
+                        <UserButton.Link label="Admin Panel" href="/admin" labelIcon={<ShieldIcon className="size-4" />} />
+                    )}
                     
                 </UserButton.MenuItems>
             </UserButton>

@@ -45,7 +45,7 @@ export const SearchInputSuspense = () => {
 
 
     return(
-        <form className="flex w-full max-w-[600px]" onSubmit={handleSearch}>
+        <form className="flex w-full max-w-[600px] shadow-lg rounded-full overflow-hidden" onSubmit={handleSearch}>
             {/* Search input */}
             <div className="relative w-full">
                 <input 
@@ -53,7 +53,7 @@ export const SearchInputSuspense = () => {
                 onChange={(e) => setValue(e.target.value)}
                 type="text"
                 placeholder="Search"
-                className="w-full p-4 py-2 pr-12 rounded-l-full border focus:outline-none focus:border-blue-500"
+                className="w-full p-4 py-3 pr-12 bg-white/90 backdrop-blur-sm border-0 focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder-gray-500 font-medium"
                 
                 />
                 {value && (
@@ -74,7 +74,7 @@ export const SearchInputSuspense = () => {
             <button
                 disabled={!value.trim()}
                 type="submit"
-                className="px-5 py-2.5 bg-gray-100 border border-l-0 rounded-r-full hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-5 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 font-semibold"
             >
                 <SearchIcon className="size-5"/>
 

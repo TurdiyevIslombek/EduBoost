@@ -1,4 +1,88 @@
 {
   "typescript.tsdk": "node_modules/typescript/lib",
-  "typescript.enablePromptUseWorkspaceTsdk": true
+  "typescript.enablePromptUseWorkspaceTsdk": true,
+  "amp.permissions": [
+    {
+      "tool": "Bash",
+      "action": "ask",
+      "matches": {
+        "cmd": [
+          "*rm*rf*",
+          "*find*exec*",
+          "*find*delete*",
+          "*git*push*"
+        ]
+      }
+    },
+    {
+      "tool": "*",
+      "action": "allow",
+      "matches": {}
+    },
+    {
+      "tool": "Bash",
+      "action": "ask",
+      "matches": {
+        "cmd": [
+          "*rm*rf*",
+          "*find*exec*",
+          "*find*delete*",
+          "*git*push*"
+        ]
+      }
+    },
+    {
+      "tool": "*",
+      "action": "allow",
+      "matches": {}
+    },
+    {
+      "tool": "Bash",
+      "action": "ask",
+      "matches": {
+        "cmd": [
+          "*rm*-rf*",
+          "*rm*-r*--force*",
+          "*rm*--force*-r*"
+        ]
+      }
+    },
+    {
+      "tool": "Bash",
+      "action": "ask",
+      "matches": {
+        "cmd": [
+          "*find*-exec*",
+          "*find*-delete*"
+        ]
+      }
+    },
+    {
+      "tool": "Bash",
+      "action": "ask",
+      "matches": {
+        "cmd": [
+          "*git*push*--force*",
+          "*git*push*-f*"
+        ]
+      }
+    },
+    {
+      "tool": "Bash",
+      "action": "ask",
+      "matches": {
+        "cmd": [
+          "sudo*",
+          "su*",
+          "*chmod*777*",
+          "*chown*root*"
+        ]
+      }
+    },
+    {
+      "tool": "*",
+      "action": "allow",
+      "matches": {}
+    }
+  ]
 }

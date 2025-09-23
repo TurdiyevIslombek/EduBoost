@@ -36,7 +36,7 @@ export const VideoThumbnail = ({imageUrl, title, previewUrl, duration} : VideoTh
                     className="size-full object-cover opacity-0 group-hover:opacity-100"
                 />
             </div>
-            <div className="absolute bottom-2 right-2 px-1 py-0.5 rounded bg-black/80 text-white text-xs font-medium">
+            <div className="absolute bottom-2 right-2 px-2 py-1 rounded-full bg-black/70 backdrop-blur-sm text-white text-xs font-semibold shadow-lg">
                 {formatDuration (duration)}
             </div>
         </div>

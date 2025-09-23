@@ -1,27 +1,20 @@
-import { HydrateClient, trpc } from "@/trpc/server";
-import { HomeView } from "@/modules/home/ui/views/home-view";
-import { DEFAULT_LIMIT } from "@/constants";
+import { currentUser } from "@clerk/nextjs/server";
+import { redirect } from "next/navigation";
+import { LandingView } from "@/modules/landing/ui/views/landing-view";
 
 export const dynamic = "force-dynamic";
+export const revalidate = 0; // Disable caching
 
-interface PageProps {
-  searchParams: Promise<{
-    categoryId?: string;
-  }>;
+const RootPage = async () => {
+  const user = await currentUser();
+  
+  // If user is authenticated, redirect to home immediately
+  if (user) {
+    redirect("/home");
+  }
+
+  // If user is not authenticated, show landing page
+  return <LandingView />;
 }
 
-const Page = async ({searchParams}: PageProps) => {
-  const { categoryId } = await searchParams;
-
-  void trpc.categories.getMany.prefetch();
-  void trpc.videos.getMany.prefetchInfinite({ categoryId, limit:DEFAULT_LIMIT });
-
-
-  return (
-    <HydrateClient>
-      <HomeView categoryId={categoryId} />
-    </HydrateClient>
-  );
-}
-
-export default Page;
+export default RootPage;

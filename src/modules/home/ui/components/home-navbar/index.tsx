@@ -7,15 +7,15 @@ import { AuthButton } from "@/modules/auth/ui/components/auth-button"
 
 export const HomeNavbar = () =>{
     return(
-        <nav className="fixed top-0 left-0 right-0 h-16 bg-white flex items-center px-2 pr-5 z-50">
+        <nav className="fixed top-0 left-0 right-0 h-16 bg-white/95 backdrop-blur-lg border-b border-white/20 shadow-lg flex items-center px-2 pr-5 z-50">
             <div className="flex items-center gap-4 w-full">
                 {/* Menu and Logo */}
                 <div className="flex items-center flex-shrink-0 ">
                     <SidebarTrigger/>
                     <Link prefetch  href="/" className="hidden md:block">
-                        <div className="p-4 flex items-center gap-1">
-                            <Image src="/logo_eduboost.png" alt="Logo" width={32} height={32} />
-                            <p className="text-xl font-semibold tracking-tight text-blue-600">EduBoost</p>
+                        <div className="p-4 flex items-center gap-2">
+                            <Image src="/logo_eduboost.png" alt="Logo" width={32} height={32} className="drop-shadow-sm" />
+                            <p className="text-xl font-bold tracking-tight bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">EduBoost</p>
                         </div>
                     </Link>
                 </div>

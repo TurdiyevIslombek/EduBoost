@@ -27,16 +27,7 @@ export const subscriptionsRouter = createTRPCRouter({
             .select(
               {
                 ...getTableColumns(subscriptions),
-                user: {
-                    ...getTableColumns(users),
-
-                    subscriberCount: db.$count(
-                        subscriptions, 
-                        eq(subscriptions.creatorId, users.id)
-                    ),          
-
-                },
-              
+                user: getTableColumns(users),
               }
             )
             .from(subscriptions)
@@ -56,6 +47,7 @@ export const subscriptionsRouter = createTRPCRouter({
                 desc(subscriptions.updatedAt),
                 desc(subscriptions.creatorId)
             ).limit(limit + 1);
+
           const hasMore = data.length > limit;  
     
           const items = hasMore ? data.slice(0, -1) : data;

@@ -1,6 +1,6 @@
 "use client";
 import {z} from "zod"
-import { Suspense, useState } from "react";
+import { Suspense, useState, useRef, useEffect } from "react";
 import { trpc } from "@/trpc/client";
 import {useForm} from "react-hook-form";
 import { Input } from "@/components/ui/input";
@@ -123,6 +123,116 @@ const FormSectionSuspense = ({videoId}: FormSectionProps) => {
     const [categories] = trpc.categories.getMany.useSuspenseQuery();
     const utils = trpc.useUtils();
 
+    // Polling state
+    const pollingRef = useRef<NodeJS.Timeout | null>(null);
+    const [isPolling, setIsPolling] = useState(false);
+    const [pollingType, setPollingType] = useState<'ai' | 'status' | null>(null);
+
+    // Store initial values to detect changes
+    const initialVideoRef = useRef({
+        title: video.title,
+        description: video.description,
+        thumbnailUrl: video.thumbnailUrl
+    });
+
+    // Function to start polling for AI updates
+    const startPolling = () => {
+        if (pollingRef.current && pollingType === 'ai') return; // Already polling for AI
+        
+        // Clear any existing status polling
+        if (pollingRef.current) {
+            clearInterval(pollingRef.current);
+            pollingRef.current = null;
+        }
+        
+        setIsPolling(true);
+        setPollingType('ai');
+        pollingRef.current = setInterval(async () => {
+            await utils.studio.getOne.invalidate({id: videoId});
+        }, 3000); // Poll every 3 seconds for AI
+
+        // Stop polling after 5 minutes (max AI processing time)
+        setTimeout(() => {
+            if (pollingRef.current && pollingType === 'ai') {
+                clearInterval(pollingRef.current);
+                pollingRef.current = null;
+                setIsPolling(false);
+                setPollingType(null);
+            }
+        }, 5 * 60 * 1000);
+    };
+
+    // Auto-poll for video processing status
+    useEffect(() => {
+        const shouldPollStatus = video.muxStatus !== "ready" || video.muxTrackStatus !== "ready";
+        
+        if (shouldPollStatus && !pollingRef.current && pollingType !== 'ai') {
+            // Start polling for processing status (only if not already polling for AI)
+            setPollingType('status');
+            pollingRef.current = setInterval(async () => {
+                await utils.studio.getOne.invalidate({id: videoId});
+            }, 5000); // Poll every 5 seconds for processing status
+        } else if (!shouldPollStatus && pollingRef.current && pollingType === 'status') {
+            // Stop polling when both statuses are ready and we were polling for status
+            clearInterval(pollingRef.current);
+            pollingRef.current = null;
+            setPollingType(null);
+        }
+        
+        return () => {
+            if (pollingRef.current && pollingType === 'status') {
+                clearInterval(pollingRef.current);
+                pollingRef.current = null;
+                setPollingType(null);
+            }
+        };
+    }, [video.muxStatus, video.muxTrackStatus, pollingType, videoId, utils]);
+
+    // Stop polling when component unmounts
+    useEffect(() => {
+        return () => {
+            if (pollingRef.current) {
+                clearInterval(pollingRef.current);
+                pollingRef.current = null;
+                setIsPolling(false);
+                setPollingType(null);
+            }
+        };
+    }, []);
+
+    // Detect when AI has updated the video and stop polling
+    useEffect(() => {
+        const hasChanged = 
+            video.title !== initialVideoRef.current.title ||
+            video.description !== initialVideoRef.current.description ||
+            video.thumbnailUrl !== initialVideoRef.current.thumbnailUrl;
+
+        if (hasChanged && pollingType === 'ai') {
+            // AI update detected, stop AI polling
+            if (pollingRef.current) {
+                clearInterval(pollingRef.current);
+                pollingRef.current = null;
+                setIsPolling(false);
+                setPollingType(null);
+                toast.success("AI generation completed!");
+                
+                // Update initial values to new ones
+                initialVideoRef.current = {
+                    title: video.title,
+                    description: video.description,
+                    thumbnailUrl: video.thumbnailUrl
+                };
+            }
+        } else if (pollingType !== 'ai') {
+            // Update initial values when not polling for AI (manual updates or status polling)
+            initialVideoRef.current = {
+                title: video.title,
+                description: video.description,
+                thumbnailUrl: video.thumbnailUrl
+            };
+        }
+    }, [video.title, video.description, video.thumbnailUrl, pollingType]);
+
     const [ThumbnailModalOpen, setThumbnailModalOpen] = useState(false);
 
     const [ThumbnailGenerateModalOpen, setThumbnailGenerateModalOpen] = useState(false);
@@ -173,6 +283,8 @@ const FormSectionSuspense = ({videoId}: FormSectionProps) => {
     const generateTitle = trpc.videos.generateTitle.useMutation({
         onSuccess: () => {
             toast.success("Background task started", {description: "This may take a few minutes"});
+            // Start polling for updates
+            startPolling();
         },
         onError: () => {
             toast.error("Something went wrong. Please try again.");
@@ -182,6 +294,8 @@ const FormSectionSuspense = ({videoId}: FormSectionProps) => {
     const generateDescription = trpc.videos.generateDescription.useMutation({
         onSuccess: () => {
             toast.success("Background task started", {description: "This may take a few minutes"});
+            // Start polling for updates
+            startPolling();
         },
         onError: () => {
             toast.error("Something went wrong. Please try again.");
@@ -218,7 +332,8 @@ const FormSectionSuspense = ({videoId}: FormSectionProps) => {
             <ThumbnailGenerateModal
                 open={ThumbnailGenerateModalOpen}
                 onOpenChange={setThumbnailGenerateModalOpen}
-                videoId={videoId} 
+                videoId={videoId}
+                onGenerationStart={startPolling}
             />
 
             <ThumbnailUploadModal 
@@ -246,9 +361,16 @@ const FormSectionSuspense = ({videoId}: FormSectionProps) => {
                                             <RotateCcwIcon className="size-4 mr-2" />
                                             Revalidate
                                         </DropdownMenuItem>
-                                        <DropdownMenuItem onClick={() => remove.mutate({ id: video.id })}>
+                                        <DropdownMenuItem 
+                                            onClick={() => {
+                                                if (window.confirm(`Are you sure you want to delete "${video.title}"? This action cannot be undone.`)) {
+                                                    remove.mutate({ id: video.id });
+                                                }
+                                            }}
+                                            className="text-red-600 focus:text-red-600"
+                                        >
                                             <TrashIcon className="size-4 mr-2" />
-                                            Delete
+                                            Delete Video
                                         </DropdownMenuItem>
                                     </DropdownMenuContent>
                                 </DropdownMenu>
@@ -277,6 +399,12 @@ const FormSectionSuspense = ({videoId}: FormSectionProps) => {
                                                             : <SparklesIcon />
                                                         }
                                                     </Button>
+                                                    {isPolling && (
+                                                        <span className="text-xs text-blue-600 animate-pulse flex items-center gap-1">
+                                                            <div className="w-2 h-2 bg-blue-600 rounded-full animate-pulse"></div>
+                                                            AI processing...
+                                                        </span>
+                                                    )}
                                                 </div>
                                             </FormLabel>
                                             <FormControl>
@@ -431,13 +559,23 @@ const FormSectionSuspense = ({videoId}: FormSectionProps) => {
                                             <div className="flex justify-between items-center">
                                                 <div className="flex flex-col gap-y-1">
                                                     <p className="text-xs text-muted-foreground">Video status</p>
-                                                    <p className="text-sm">{snakeCaseToTitle(video.muxStatus || "preparing")}</p>
+                                                    <div className="flex items-center gap-2">
+                                                        <p className="text-sm">{snakeCaseToTitle(video.muxStatus || "preparing")}</p>
+                                                        {video.muxStatus !== "ready" && (
+                                                            <div className="w-2 h-2 bg-blue-600 rounded-full animate-pulse"></div>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             </div>
                                             <div className="flex justify-between items-center">
                                                 <div className="flex flex-col gap-y-1">
                                                     <p className="text-xs text-muted-foreground">Subtitles status</p>
-                                                    <p className="text-sm">{snakeCaseToTitle(video.muxTrackStatus || "preparing")}</p>
+                                                    <div className="flex items-center gap-2">
+                                                        <p className="text-sm">{snakeCaseToTitle(video.muxTrackStatus || "preparing")}</p>
+                                                        {video.muxTrackStatus !== "ready" && (
+                                                            <div className="w-2 h-2 bg-orange-600 rounded-full animate-pulse"></div>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>

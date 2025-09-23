@@ -15,7 +15,22 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: "**.ufs.sh", // <-- This allows any subdomain of ufs.sh
       },
+      {
+        protocol: "https",
+        hostname: "img.clerk.com", // <-- Allow Clerk profile images
+      },
+      {
+        protocol: "https",
+        hostname: "images.clerk.dev", // <-- Allow Clerk CDN images
+      },
+      {
+        protocol: "https",
+        hostname: "**.clerk.com", // <-- Allow all Clerk subdomains
+      },
     ],
+    // Add error handling for failed images
+    dangerouslyAllowSVG: true,
+    contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
   },
 
   // 👇 Add this to silence the multiple lockfile warning

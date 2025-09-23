@@ -6,7 +6,7 @@ interface PageProps {
 
 export const VideoView = ({videoId}: PageProps) => {
     return (
-        <div className="px-4 pt-2.5 max-w-screen-lg">
+        <div className="px-4 pt-2.5 max-w-screen-lg mx-auto">
             <FormSection videoId={videoId} />
         </div>
     );

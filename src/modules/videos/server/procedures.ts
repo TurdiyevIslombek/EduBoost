@@ -479,6 +479,56 @@ export const videosRouter = createTRPCRouter({
         .mutation(async({ctx, input}) => {
             const {id: userId} = ctx.user;
 
+            // First, get the video to access external resource IDs
+            const [existingVideo] = await db
+                .select()
+                .from(videos)
+                .where(and(
+                    eq(videos.id, input.id),
+                    eq(videos.userId, userId)
+                ));
+                
+            if (!existingVideo) {
+                throw new TRPCError({ code: "NOT_FOUND"});
+            }
+
+            // Clean up external resources in parallel
+            const cleanupPromises = [];
+
+            // 1. Delete Mux asset if it exists
+            if (existingVideo.muxAssetId) {
+                console.log("Deleting Mux asset:", existingVideo.muxAssetId);
+                cleanupPromises.push(
+                    mux.video.assets.delete(existingVideo.muxAssetId)
+                        .catch(error => {
+                            console.error("Failed to delete Mux asset:", error);
+                            // Don't throw - continue with cleanup even if Mux fails
+                        })
+                );
+            }
+
+            // 2. Delete UploadThing thumbnail if it exists
+            if (existingVideo.thumbnailKey) {
+                console.log("Deleting UploadThing thumbnail:", existingVideo.thumbnailKey);
+                const utapi = new UTApi();
+                cleanupPromises.push(
+                    utapi.deleteFiles([existingVideo.thumbnailKey])
+                        .catch(error => {
+                            console.error("Failed to delete UploadThing thumbnail:", error);
+                            // Don't throw - continue with cleanup even if UploadThing fails
+                        })
+                );
+            }
+
+            // Wait for external cleanups to complete (with timeout)
+            try {
+                await Promise.allSettled(cleanupPromises);
+            } catch (error) {
+                console.error("Some external resource cleanup failed:", error);
+                // Continue with database deletion even if external cleanup partially fails
+            }
+
+            // 3. Delete from database (this will cascade to related records)
             const [removedVideo] = await db
                 .delete(videos)
                 .where(and(
@@ -491,6 +541,7 @@ export const videosRouter = createTRPCRouter({
                 throw new TRPCError({ code: "NOT_FOUND"});
             }
 
+            console.log("Successfully deleted video and cleaned up external resources:", removedVideo.title);
             return removedVideo;
         }),
 

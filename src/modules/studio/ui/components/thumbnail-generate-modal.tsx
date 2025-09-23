@@ -19,6 +19,7 @@ interface ThumbnailGenerateModalProps {
     videoId: string;
     open: boolean;
     onOpenChange: (open: boolean) => void;
+    onGenerationStart?: () => void;
 }
 
 
@@ -28,7 +29,7 @@ const formSchema = z.object({
 })
 
 
-export const ThumbnailGenerateModal = ({ videoId, open, onOpenChange }: ThumbnailGenerateModalProps) => {
+export const ThumbnailGenerateModal = ({ videoId, open, onOpenChange, onGenerationStart }: ThumbnailGenerateModalProps) => {
 
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
@@ -43,6 +44,8 @@ export const ThumbnailGenerateModal = ({ videoId, open, onOpenChange }: Thumbnai
             toast.success("Background task started", {description: "This may take a few minutes"});
             form.reset();
             onOpenChange(false);
+            // Start polling for updates
+            onGenerationStart?.();
         },
         onError: () => {
             toast.error("Something went wrong. Please try again.");
