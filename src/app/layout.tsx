@@ -10,6 +10,9 @@ const inter = Inter({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: "EduBoost",
   description: "The best platform to boost your education",
+  verification: {
+    google: "iUsBa2bi345e38sF7_ysmu_s57Lu1DUgJNHDpJ8HYXE",
+  },
 };
 
 export default function RootLayout({
