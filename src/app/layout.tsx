@@ -4,6 +4,7 @@ import {ClerkProvider} from "@clerk/nextjs"
 import "./globals.css";
 import { TRPCProvider } from "@/trpc/client";
 import { Toaster } from "@/components/ui/sonner";
+import { APP_URL } from "@/constants";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -13,6 +14,7 @@ export const metadata: Metadata = {
   verification: {
     google: "iUsBa2bi345e38sF7_ysmu_s57Lu1DUgJNHDpJ8HYXE",
   },
+  metadataBase: new URL(APP_URL),
 };
 
 export default function RootLayout({
