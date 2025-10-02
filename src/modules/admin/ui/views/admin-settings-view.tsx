@@ -12,8 +12,31 @@ import {
   BellIcon,
   ServerIcon
 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
 
 export const AdminSettingsView = () => {
+  // Notification settings (persisted locally for now)
+  const [notifNewUser, setNotifNewUser] = useState(true);
+  const [notifUpload, setNotifUpload] = useState(true);
+  const [notifSystem, setNotifSystem] = useState(true);
+
+  useEffect(() => {
+    // Hydrate from localStorage
+    try {
+      const s = JSON.parse(localStorage.getItem("adminNotifSettings") || "{}");
+      if (typeof s.notifNewUser === "boolean") setNotifNewUser(s.notifNewUser);
+      if (typeof s.notifUpload === "boolean") setNotifUpload(s.notifUpload);
+      if (typeof s.notifSystem === "boolean") setNotifSystem(s.notifSystem);
+    } catch {}
+  }, []);
+
+  const saveNotifSettings = () => {
+    const payload = { notifNewUser, notifUpload, notifSystem };
+    localStorage.setItem("adminNotifSettings", JSON.stringify(payload));
+    toast.success("Notification settings saved");
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -129,7 +152,7 @@ export const AdminSettingsView = () => {
               <Label>New User Notifications</Label>
               <p className="text-sm text-gray-500">Get notified when new users register</p>
             </div>
-            <Switch defaultChecked />
+            <Switch checked={notifNewUser} onCheckedChange={setNotifNewUser} />
           </div>
 
           <div className="flex items-center justify-between">
@@ -137,7 +160,7 @@ export const AdminSettingsView = () => {
               <Label>Video Upload Notifications</Label>
               <p className="text-sm text-gray-500">Get notified about new video uploads</p>
             </div>
-            <Switch defaultChecked />
+            <Switch checked={notifUpload} onCheckedChange={setNotifUpload} />
           </div>
 
           <div className="flex items-center justify-between">
@@ -145,11 +168,11 @@ export const AdminSettingsView = () => {
               <Label>System Alerts</Label>
               <p className="text-sm text-gray-500">Receive system maintenance alerts</p>
             </div>
-            <Switch defaultChecked />
+            <Switch checked={notifSystem} onCheckedChange={setNotifSystem} />
           </div>
 
           <div className="flex justify-end">
-            <Button className="bg-gradient-to-r from-green-500 to-green-600">
+            <Button className="bg-gradient-to-r from-green-500 to-green-600" onClick={saveNotifSettings}>
               Save Notification Settings
             </Button>
           </div>

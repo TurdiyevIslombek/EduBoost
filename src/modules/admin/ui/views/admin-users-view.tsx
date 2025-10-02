@@ -3,7 +3,6 @@
 import { trpc } from "@/trpc/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { 
   UsersIcon, 
   UserPlusIcon, 
@@ -125,7 +124,7 @@ export const AdminUsersView = () => {
               <div className="col-span-4">User</div>
               <div className="col-span-2">Join Date</div>
               <div className="col-span-2">Videos</div>
-              <div className="col-span-2">Status</div>
+              <div className="col-span-2">Subscribers</div>
               <div className="col-span-2">Actions</div>
             </div>
 
@@ -166,25 +165,43 @@ interface UserRowProps {
     imageUrl: string;
     createdAt: Date;
     videoCount: number;
+    subscriberCountReal: number;
+    subscriberCountAdded: number;
   };
 }
 
 const UserRow = ({ user }: UserRowProps) => {
   const utils = trpc.useContext();
   const deleteUserMutation = trpc.admin.deleteUser.useMutation({
-    onSuccess: () => {
-      utils.admin.getAllUsers.invalidate();
-    },
+  onSuccess: () => {
+  utils.admin.getAllUsers.invalidate();
+  },
   });
-
+   const updateSubsMutation = trpc.admin.updateUserSubscribers.useMutation({
+    onSuccess: () => {
+    utils.admin.getAllUsers.invalidate();
+  },
+  });
+  
   const handleDeleteUser = async () => {
-    if (window.confirm(`Are you sure you want to delete user "${user.name}"? This action cannot be undone.`)) {
-      try {
+  if (window.confirm(`Are you sure you want to delete user "${user.name}"? This action cannot be undone.`)) {
+    try {
         await deleteUserMutation.mutateAsync({ id: user.id });
       } catch (error) {
         console.error("Failed to delete user:", error);
       }
     }
+  };
+
+  const handleEditSubscribers = async () => {
+    const value = prompt("Set subscribers override (leave blank to cancel):", "");
+    if (value === null) return;
+    const n = Number(value);
+    if (Number.isNaN(n) || n < 0) {
+      alert("Please enter a non-negative number");
+      return;
+    }
+    await updateSubsMutation.mutateAsync({ userId: user.id, subscribers: n });
   };
 
   return (
@@ -212,13 +229,17 @@ const UserRow = ({ user }: UserRowProps) => {
         <p className="text-sm font-medium">{user.videoCount}</p>
       </div>
       <div className="col-span-2 flex items-center">
-        <Badge variant="default" className="bg-green-100 text-green-800">
-          Active
-        </Badge>
+        <p className="text-sm font-medium">
+          {user.subscriberCountReal + user.subscriberCountAdded}
+          <span className="text-xs text-gray-500 ml-2">({user.subscriberCountReal} + {user.subscriberCountAdded})</span>
+        </p>
       </div>
       <div className="col-span-2 flex items-center gap-2">
         <Button size="sm" variant="ghost" className="hover:bg-blue-100" title="View User">
           <UserIcon className="size-4" />
+        </Button>
+        <Button size="sm" variant="ghost" className="hover:bg-blue-100" title="Edit Subscribers" onClick={handleEditSubscribers}>
+          Edit Subs
         </Button>
         <Button 
           size="sm" 

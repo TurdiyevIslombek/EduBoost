@@ -7,6 +7,11 @@ import { SubscriptionButton } from "@/modules/subscriptions/ui/components/subscr
 import { UseSubscription } from "@/modules/subscriptions/hooks/use-subscription";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useState } from "react";
+import { Input } from "@/components/ui/input";
+import { PencilIcon, CheckIcon, XIcon } from "lucide-react";
+import { trpc } from "@/trpc/client";
+import { toast } from "sonner";
 
 
 interface UserPageInfoProps {
@@ -50,6 +55,25 @@ export const UserPageInfo = ({ user }: UserPageInfoProps) => {
         isSubscribed: user.viewerSubscribed,
     })
 
+    const [isEditing, setIsEditing] = useState(false);
+    const [newName, setNewName] = useState(user.name);
+    const canEdit = userId === user.clerkId;
+
+    const updateName = trpc.users.updateName.useMutation({
+        onSuccess: () => {
+            toast.success("Name updated");
+            setIsEditing(false);
+        },
+        onError: (e) => {
+            toast.error(e.message || "Failed to update name");
+        }
+    });
+
+    const saveName = async () => {
+        if (!newName || newName.trim().length < 2) return;
+        await updateName.mutateAsync({ name: newName.trim() });
+    };
+
     return (
         <div className="py-6">
             <div className="flex flex-col md:hidden ">
@@ -67,7 +91,32 @@ export const UserPageInfo = ({ user }: UserPageInfoProps) => {
                     />
 
                     <div className="flex-1 min-w-0">
-                        <h1 className="text-xl font-bold">{user.name}</h1>
+                        <div className="flex items-center gap-2">
+                            {isEditing ? (
+                                <>
+                                    <Input
+                                        value={newName}
+                                        onChange={(e) => setNewName(e.target.value)}
+                                        className="h-8"
+                                    />
+                                    <Button size="icon" variant="ghost" onClick={saveName} disabled={updateName.isPending || newName.trim().length < 2}>
+                                        <CheckIcon className="size-4" />
+                                    </Button>
+                                    <Button size="icon" variant="ghost" onClick={() => { setIsEditing(false); setNewName(user.name); }} disabled={updateName.isPending}>
+                                        <XIcon className="size-4" />
+                                    </Button>
+                                </>
+                            ) : (
+                                <>
+                                    <h1 className="text-xl font-bold truncate">{user.name}</h1>
+                                    {canEdit && (
+                                        <Button size="icon" variant="ghost" onClick={() => setIsEditing(true)} title="Edit name">
+                                            <PencilIcon className="size-4" />
+                                        </Button>
+                                    )}
+                                </>
+                            )}
+                        </div>
                         <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
                             <span>{user.subscriberCount} subscribers</span>
                             <span>•</span>
@@ -75,7 +124,7 @@ export const UserPageInfo = ({ user }: UserPageInfoProps) => {
                         </div>
                     </div>
                 </div>
-                {userId === user.clerkId ? (
+                {canEdit ? (
                     <Button
                         variant="secondary"
                         asChild
@@ -98,21 +147,46 @@ export const UserPageInfo = ({ user }: UserPageInfoProps) => {
                     size="xl"
                     imageUrl={user.imageUrl}
                     name={user.name}
-                    className={cn(userId === user.clerkId && "cursor-pointer hover:opacity-80 transition-opacity duration-300")}
+                    className={cn(canEdit && "cursor-pointer hover:opacity-80 transition-opacity duration-300")}
                     onClick={() => {
-                        if (user.clerkId === userId) {
+                        if (canEdit) {
                             clerk.openUserProfile();
                         }
                     }}
                 />
                 <div className="flex-1 min-w-0">
-                    <h1 className="text-4xl font-bold">{user.name}</h1>
+                    <div className="flex items-center gap-3">
+                        {isEditing ? (
+                            <>
+                                <Input
+                                    value={newName}
+                                    onChange={(e) => setNewName(e.target.value)}
+                                    className="max-w-sm h-9"
+                                />
+                                <Button size="icon" variant="ghost" onClick={saveName} disabled={updateName.isPending || newName.trim().length < 2}>
+                                    <CheckIcon className="size-5" />
+                                </Button>
+                                <Button size="icon" variant="ghost" onClick={() => { setIsEditing(false); setNewName(user.name); }} disabled={updateName.isPending}>
+                                    <XIcon className="size-5" />
+                                </Button>
+                            </>
+                        ) : (
+                            <>
+                                <h1 className="text-4xl font-bold truncate">{user.name}</h1>
+                                {canEdit && (
+                                    <Button size="icon" variant="ghost" onClick={() => setIsEditing(true)} title="Edit name">
+                                        <PencilIcon className="size-5" />
+                                    </Button>
+                                )}
+                            </>
+                        )}
+                    </div>
                     <div className="flex items-center gap-1 text-sm text-muted-foreground mt-3">
                         <span>{user.subscriberCount} subscribers</span>
                         <span>•</span>
                         <span>{user.videoCount} videos</span>
                     </div>
-                    {userId === user.clerkId ? (
+                    {canEdit ? (
                         <Button
                             variant="secondary"
                             asChild

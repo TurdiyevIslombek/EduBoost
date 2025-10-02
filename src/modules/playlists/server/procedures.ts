@@ -279,10 +279,13 @@ export const playlistsRouter = createTRPCRouter({
                 ...getTableColumns(videos),
                 user: users,
                 likedAt: viewerVideoReactions.likedAt,
-                viewCount: db.$count(videoViews, eq(videoViews.videoId, videos.id)),                  likeCount: db.$count(videoReactions, and(
+                viewCount: db.$count(videoViews, eq(videoViews.videoId, videos.id)),
+                viewCountAdded: videos.viewCountOverride,
+                likeCount: db.$count(videoReactions, and(
                   eq(videoReactions.videoId, videos.id),
                   eq(videoReactions.type, "like"),
                 )),
+                likeCountAdded: videos.likeCountOverride,
                 dislikeCount: db.$count(videoReactions, and(
                   eq(videoReactions.videoId, videos.id),
                   eq(videoReactions.type, "dislike"),
@@ -311,15 +314,21 @@ export const playlistsRouter = createTRPCRouter({
           const hasMore = data.length > limit;  
     
           const items = hasMore ? data.slice(0, -1) : data;
-    
+
+          // Apply overrides to totals
+          items.forEach((v) => {
+            (v as unknown as { viewCount: number }).viewCount = (v as unknown as { viewCount: number }).viewCount + (v as unknown as { viewCountAdded: number }).viewCountAdded;
+          (v as unknown as { likeCount: number }).likeCount = (v as unknown as { likeCount: number }).likeCount + (v as unknown as { likeCountAdded: number }).likeCountAdded;
+          });
+          
           const lastItem = items[items.length - 1];
           const nextCursor = hasMore ?
-          {
-            id: lastItem.id,
-            likedAt: lastItem.likedAt,
-          }
-          : null;
-          return { items, nextCursor };
+            {
+              id: lastItem.id,
+              likedAt: lastItem.likedAt,
+            }
+            : null;
+            return { items, nextCursor };
     }),
 
 
@@ -431,10 +440,13 @@ export const playlistsRouter = createTRPCRouter({
                 {
                   ...getTableColumns(videos),
                   user: users,
-                  viewCount: db.$count(videoViews, eq(videoViews.videoId, videos.id)),                  likeCount: db.$count(videoReactions, and(
+                  viewCount: db.$count(videoViews, eq(videoViews.videoId, videos.id)),
+                  viewCountAdded: videos.viewCountOverride,
+                  likeCount: db.$count(videoReactions, and(
                     eq(videoReactions.videoId, videos.id),
                     eq(videoReactions.type, "like"),
                   )),
+                  likeCountAdded: videos.likeCountOverride,
                   dislikeCount: db.$count(videoReactions, and(
                     eq(videoReactions.videoId, videos.id),
                     eq(videoReactions.type, "dislike"),
@@ -463,6 +475,12 @@ export const playlistsRouter = createTRPCRouter({
           const hasMore = data.length > limit;  
     
           const items = hasMore ? data.slice(0, -1) : data;
+
+          // Apply overrides to totals
+          items.forEach((v) => {
+            (v as unknown as { viewCount: number }).viewCount = (v as unknown as { viewCount: number }).viewCount + (v as unknown as { viewCountAdded: number }).viewCountAdded;
+            (v as unknown as { likeCount: number }).likeCount = (v as unknown as { likeCount: number }).likeCount + (v as unknown as { likeCountAdded: number }).likeCountAdded;
+          });
     
           const lastItem = items[items.length - 1];
           const nextCursor = hasMore ?
@@ -505,10 +523,13 @@ export const playlistsRouter = createTRPCRouter({
                 ...getTableColumns(videos),
                 user: users,
                 viewedAt: viewerVideoViews.viewedAt,
-                viewCount: db.$count(videoViews, eq(videoViews.videoId, videos.id)),                  likeCount: db.$count(videoReactions, and(
+                viewCount: db.$count(videoViews, eq(videoViews.videoId, videos.id)),
+                viewCountAdded: videos.viewCountOverride,
+                likeCount: db.$count(videoReactions, and(
                   eq(videoReactions.videoId, videos.id),
                   eq(videoReactions.type, "like"),
                 )),
+                likeCountAdded: videos.likeCountOverride,
                 dislikeCount: db.$count(videoReactions, and(
                   eq(videoReactions.videoId, videos.id),
                   eq(videoReactions.type, "dislike"),
@@ -537,6 +558,12 @@ export const playlistsRouter = createTRPCRouter({
           const hasMore = data.length > limit;  
     
           const items = hasMore ? data.slice(0, -1) : data;
+
+          // Apply overrides to totals
+          items.forEach((v) => {
+            (v as unknown as { viewCount: number }).viewCount = (v as unknown as { viewCount: number }).viewCount + (v as unknown as { viewCountAdded: number }).viewCountAdded;
+            (v as unknown as { likeCount: number }).likeCount = (v as unknown as { likeCount: number }).likeCount + (v as unknown as { likeCountAdded: number }).likeCountAdded;
+          });
     
           const lastItem = items[items.length - 1];
           const nextCursor = hasMore ?

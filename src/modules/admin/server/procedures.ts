@@ -1,6 +1,6 @@
 import { createTRPCRouter, protectedProcedure } from "@/trpc/init";
 import { db } from "@/db";
-import { videos, users, categories, videoViews } from "@/db/schema";
+import { videos, users, categories, videoViews, videoReactions, subscriptions } from "@/db/schema";
 import { count, desc, eq, sql, gte } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { clerkClient } from "@clerk/nextjs/server";
@@ -12,9 +12,13 @@ const requireAdmin = protectedProcedure.use(async ({ ctx, next }) => {
   // Get the full Clerk user data to check email
   const clerk = await clerkClient();
   const clerkUser = await clerk.users.getUser(ctx.user.clerkId);
-  const userEmail = clerkUser.emailAddresses?.[0]?.emailAddress;
+  const userEmail = clerkUser.emailAddresses?.[0]?.emailAddress?.toLowerCase();
+  const allowed = (process.env.ADMIN_EMAILS || "turdiyevislombek01@gmail.com")
+    .split(",")
+    .map((e) => e.trim().toLowerCase())
+    .filter(Boolean);
   
-  if (userEmail !== "turdiyevislombek01@gmail.com") {
+  if (!userEmail || !allowed.includes(userEmail)) {
     throw new TRPCError({
       code: "FORBIDDEN",
       message: "Admin access required",
@@ -109,7 +113,7 @@ export const adminRouter = createTRPCRouter({
 
   getAllVideos: requireAdmin.query(async () => {
     try {
-      const videosWithViews = await db
+      const videosWithCounts = await db
         .select({
           id: videos.id,
           title: videos.title,
@@ -123,14 +127,19 @@ export const adminRouter = createTRPCRouter({
             imageUrl: users.imageUrl,
           },
           category: {
+            id: categories.id,
             name: categories.name,
           },
-          viewCount: count(videoViews.videoId),
+          viewCountReal: count(videoViews.videoId),
+          likeCountReal: count(sql`CASE WHEN ${videoReactions.type} = 'like' THEN 1 END`),
+          viewCountAdded: videos.viewCountOverride,
+          likeCountAdded: videos.likeCountOverride,
         })
         .from(videos)
         .leftJoin(users, eq(videos.userId, users.id))
         .leftJoin(categories, eq(videos.categoryId, categories.id))
         .leftJoin(videoViews, eq(videos.id, videoViews.videoId))
+        .leftJoin(videoReactions, eq(videos.id, videoReactions.videoId))
         .groupBy(
           videos.id,
           videos.title,
@@ -141,11 +150,14 @@ export const adminRouter = createTRPCRouter({
           videos.createdAt,
           users.name,
           users.imageUrl,
-          categories.name
+          categories.id,
+          categories.name,
+          videos.viewCountOverride,
+          videos.likeCountOverride
         )
         .orderBy(desc(videos.createdAt));
 
-      return videosWithViews;
+      return videosWithCounts;
     } catch (error) {
       console.error("Get all videos error:", error);
       throw new TRPCError({
@@ -183,7 +195,7 @@ export const adminRouter = createTRPCRouter({
 
   getAllUsers: requireAdmin.query(async () => {
     try {
-      const usersWithVideoCount = await db
+      const usersWithCounts = await db
         .select({
           id: users.id,
           clerkId: users.clerkId,
@@ -191,13 +203,16 @@ export const adminRouter = createTRPCRouter({
           imageUrl: users.imageUrl,
           createdAt: users.createdAt,
           videoCount: count(videos.id),
+          subscriberCountReal: count(subscriptions.creatorId),
+          subscriberCountAdded: users.subscriberCountOverride,
         })
         .from(users)
         .leftJoin(videos, eq(users.id, videos.userId))
-        .groupBy(users.id, users.clerkId, users.name, users.imageUrl, users.createdAt)
+        .leftJoin(subscriptions, eq(users.id, subscriptions.creatorId))
+        .groupBy(users.id, users.clerkId, users.name, users.imageUrl, users.createdAt, users.subscriberCountOverride)
         .orderBy(desc(users.createdAt));
 
-      return usersWithVideoCount;
+      return usersWithCounts;
     } catch (error) {
       console.error("Get all users error:", error);
       throw new TRPCError({
@@ -371,6 +386,84 @@ export const adminRouter = createTRPCRouter({
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: `Failed to update video visibility: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        });
+      }
+    }),
+
+  updateVideo: requireAdmin
+    .input(z.object({
+      id: z.string(),
+      title: z.string().min(1).max(200).optional(),
+      description: z.string().nullable().optional(),
+      thumbnailUrl: z.string().url().nullable().optional(),
+      categoryId: z.string().uuid().nullable().optional(),
+      visibility: z.enum(["public","private"]).optional(),
+    }))
+    .mutation(async ({ input }) => {
+      try {
+        const { id, ...data } = input;
+        // Remove undefined keys
+        const updateDataEntries = Object.entries(data).filter(([, v]) => v !== undefined) as [string, unknown][];
+        const updateData = Object.fromEntries(updateDataEntries) as Partial<typeof videos.$inferInsert>;
+        if (Object.keys(updateData).length === 0) {
+          return { success: true };
+        }
+        await db.update(videos).set({
+          ...updateData,
+          updatedAt: new Date(),
+        }).where(eq(videos.id, id));
+        return { success: true };
+      } catch (error) {
+        console.error("Admin updateVideo error:", error);
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: `Failed to update video: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        });
+      }
+    }),
+
+  updateVideoMetrics: requireAdmin
+    .input(z.object({
+      id: z.string(),
+      views: z.number().int().nonnegative().optional(),
+      likes: z.number().int().nonnegative().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      try {
+        const patch: Partial<typeof videos.$inferInsert> = {};
+        if (typeof input.views === 'number') {
+          patch.viewCountOverride = input.views;
+        }
+        if (typeof input.likes === 'number') {
+          patch.likeCountOverride = input.likes;
+        }
+        if (Object.keys(patch).length > 0) {
+          await db.update(videos).set(patch).where(eq(videos.id, input.id));
+        }
+        return { success: true };
+      } catch (error) {
+        console.error("Admin updateVideoMetrics error:", error);
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: `Failed to update video metrics: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        });
+      }
+    }),
+
+  updateUserSubscribers: requireAdmin
+    .input(z.object({
+      userId: z.string(),
+      subscribers: z.number().int().nonnegative(),
+    }))
+    .mutation(async ({ input }) => {
+      try {
+        await db.update(users).set({ subscriberCountOverride: input.subscribers }).where(eq(users.id, input.userId));
+        return { success: true };
+      } catch (error) {
+        console.error("Admin updateUserSubscribers error:", error);
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: `Failed to update subscribers: ${error instanceof Error ? error.message : 'Unknown error'}`,
         });
       }
     }),

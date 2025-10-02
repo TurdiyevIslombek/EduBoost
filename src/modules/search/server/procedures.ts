@@ -27,10 +27,13 @@ export const searchRouter = createTRPCRouter({
           {
             ...getTableColumns(videos),
             user: users,
-            viewCount: db.$count(videoViews, eq(videoViews.videoId, videos.id)),                  likeCount: db.$count(videoReactions, and(
+            viewCount: db.$count(videoViews, eq(videoViews.videoId, videos.id)),
+            viewCountAdded: videos.viewCountOverride,
+            likeCount: db.$count(videoReactions, and(
               eq(videoReactions.videoId, videos.id),
               eq(videoReactions.type, "like"),
             )),
+            likeCountAdded: videos.likeCountOverride,
             dislikeCount: db.$count(videoReactions, and(
               eq(videoReactions.videoId, videos.id),
               eq(videoReactions.type, "dislike"),
@@ -60,6 +63,12 @@ export const searchRouter = createTRPCRouter({
       const hasMore = data.length > limit;  
 
       const items = hasMore ? data.slice(0, -1) : data;
+
+      // Apply DB overrides to totals to match other feeds
+      items.forEach((v) => {
+        (v as unknown as { viewCount: number }).viewCount = (v as unknown as { viewCount: number }).viewCount + (v as unknown as { viewCountAdded: number }).viewCountAdded;
+        (v as unknown as { likeCount: number }).likeCount = (v as unknown as { likeCount: number }).likeCount + (v as unknown as { likeCountAdded: number }).likeCountAdded;
+      });
 
       const lastItem = items[items.length - 1];
       const nextCursor = hasMore ?

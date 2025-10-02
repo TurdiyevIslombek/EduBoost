@@ -2,7 +2,7 @@ import { db } from "@/db";
 import { subscriptions, users } from "@/db/schema";
 import { createTRPCRouter, protectedProcedure } from "@/trpc/init";
 import { TRPCError } from "@trpc/server";
-import { and, desc, eq, getTableColumns, lt, or } from "drizzle-orm";
+import { and, desc, eq, getTableColumns, lt, or, sql } from "drizzle-orm";
 import {z} from "zod";
 
 
@@ -28,6 +28,7 @@ export const subscriptionsRouter = createTRPCRouter({
               {
                 ...getTableColumns(subscriptions),
                 user: getTableColumns(users),
+                subscriberCount: sql<number>`COALESCE(${db.$count(subscriptions, eq(subscriptions.creatorId, users.id))}, 0) + COALESCE(${users.subscriberCountOverride}, 0)`,
               }
             )
             .from(subscriptions)

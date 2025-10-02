@@ -58,6 +58,7 @@ export const users = pgTable("users", {
     bannerUrl: text("banner_url"),
     bannerKey: text("banner_key"),
     imageUrl: text("image_url").notNull(),
+    subscriberCountOverride: integer("subscriber_count_override").default(0).notNull(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (t) => [uniqueIndex("clerk_id_idx").on(t.clerkId)]);
@@ -147,6 +148,8 @@ export const videos = pgTable("videos", {
     categoryId: uuid("category_id").references(() => categories.id, {
         onDelete: "set null",
     }),
+    viewCountOverride: integer("view_count_override").default(0).notNull(),
+    likeCountOverride: integer("like_count_override").default(0).notNull(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

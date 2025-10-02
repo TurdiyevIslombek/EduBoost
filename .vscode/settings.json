@@ -41,6 +41,142 @@
       "action": "ask",
       "matches": {
         "cmd": [
+          "*rm*rf*",
+          "*find*exec*",
+          "*find*delete*",
+          "*git*push*"
+        ]
+      }
+    },
+    {
+      "tool": "*",
+      "action": "allow",
+      "matches": {}
+    },
+    {
+      "tool": "Bash",
+      "action": "ask",
+      "matches": {
+        "cmd": [
+          "*rm*rf*",
+          "*find*exec*",
+          "*find*delete*",
+          "*git*push*"
+        ]
+      }
+    },
+    {
+      "tool": "*",
+      "action": "allow",
+      "matches": {}
+    },
+    {
+      "tool": "Bash",
+      "action": "ask",
+      "matches": {
+        "cmd": [
+          "*rm*rf*",
+          "*find*exec*",
+          "*find*delete*",
+          "*git*push*"
+        ]
+      }
+    },
+    {
+      "tool": "*",
+      "action": "allow",
+      "matches": {}
+    },
+    {
+      "tool": "Bash",
+      "action": "ask",
+      "matches": {
+        "cmd": [
+          "*rm*rf*",
+          "*find*exec*",
+          "*find*delete*",
+          "*git*push*"
+        ]
+      }
+    },
+    {
+      "tool": "*",
+      "action": "allow",
+      "matches": {}
+    },
+    {
+      "tool": "Bash",
+      "action": "ask",
+      "matches": {
+        "cmd": [
+          "*rm*rf*",
+          "*find*exec*",
+          "*find*delete*",
+          "*git*push*"
+        ]
+      }
+    },
+    {
+      "tool": "*",
+      "action": "allow",
+      "matches": {}
+    },
+    {
+      "tool": "Bash",
+      "action": "ask",
+      "matches": {
+        "cmd": [
+          "*rm*rf*",
+          "*find*exec*",
+          "*find*delete*",
+          "*git*push*"
+        ]
+      }
+    },
+    {
+      "tool": "*",
+      "action": "allow",
+      "matches": {}
+    },
+    {
+      "tool": "Bash",
+      "action": "ask",
+      "matches": {
+        "cmd": [
+          "*rm*rf*",
+          "*find*exec*",
+          "*find*delete*",
+          "*git*push*"
+        ]
+      }
+    },
+    {
+      "tool": "*",
+      "action": "allow",
+      "matches": {}
+    },
+    {
+      "tool": "Bash",
+      "action": "ask",
+      "matches": {
+        "cmd": [
+          "*rm*rf*",
+          "*find*exec*",
+          "*find*delete*",
+          "*git*push*"
+        ]
+      }
+    },
+    {
+      "tool": "*",
+      "action": "allow",
+      "matches": {}
+    },
+    {
+      "tool": "Bash",
+      "action": "ask",
+      "matches": {
+        "cmd": [
           "*rm*-rf*",
           "*rm*-r*--force*",
           "*rm*--force*-r*"

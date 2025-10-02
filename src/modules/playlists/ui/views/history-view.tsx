@@ -9,7 +9,7 @@ export const HistoryView = () => {
       <div>
         <h1 className="text-2xl font-bold">History</h1>
         <p className="text-xs text-muted-foreground">
-            Videos you`&apos;`ve watched recently
+            Videos you&apos;ve watched recently
         </p>
       </div>
       <HistoryVideosSection />

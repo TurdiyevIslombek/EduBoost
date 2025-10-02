@@ -70,7 +70,7 @@ const SubscriptionsSectionSuspense = () => {
                             <SubscriptionItem 
                                 name={subscription.user.name}
                                 imageUrl={subscription.user.imageUrl}
-                                subscriberCount={0}
+                                subscriberCount={subscription.subscriberCount as unknown as number}
                                 onUnsubscribe={() => {
                                     unsubscribe.mutate({userId: subscription.creatorId})
                                 }}

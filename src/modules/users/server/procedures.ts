@@ -1,7 +1,7 @@
 import { db } from "@/db";
 import { subscriptions, users, videos} from "@/db/schema";
 import { baseProcedure, createTRPCRouter} from "@/trpc/init";
-import {eq, getTableColumns, inArray, isNotNull} from "drizzle-orm";
+import {eq, getTableColumns, inArray, isNotNull, sql} from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import {z} from "zod";
 export const usersRouter = createTRPCRouter({
@@ -38,7 +38,7 @@ export const usersRouter = createTRPCRouter({
                     ...getTableColumns(users),
                     viewerSubscribed: isNotNull(viewerSubscriptions.viewerId).mapWith(Boolean),
                     videoCount: db.$count(videos, eq(videos.userId, users.id)),
-                    subscriberCount: db.$count(subscriptions, eq(subscriptions.creatorId, users.id)),
+                    subscriberCount: sql<number>`COALESCE(${db.$count(subscriptions, eq(subscriptions.creatorId, users.id))}, 0) + COALESCE(${users.subscriberCountOverride}, 0)`,
 
                 })
                 .from(users)
@@ -52,5 +52,22 @@ export const usersRouter = createTRPCRouter({
             }
 
             return existingUser;
+        }),
+
+    updateName: baseProcedure
+        .input(z.object({ name: z.string().min(2).max(100) }))
+        .mutation(async ({ input, ctx }) => {
+            const { clerkUserId } = ctx;
+            if (!clerkUserId) {
+                throw new TRPCError({ code: "UNAUTHORIZED" });
+            }
+
+            const [existing] = await db.select().from(users).where(eq(users.clerkId, clerkUserId)).limit(1);
+            if (!existing) {
+                throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
+            }
+
+            await db.update(users).set({ name: input.name, updatedAt: new Date() }).where(eq(users.id, existing.id));
+            return { success: true };
         }),
 });

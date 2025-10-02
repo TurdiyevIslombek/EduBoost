@@ -2,7 +2,7 @@ import { db } from "@/db";
 import { subscriptions, users, videoReactions, videos, videoUpdateSchema, videoViews } from "@/db/schema";
 import { baseProcedure, createTRPCRouter, protectedProcedure } from "@/trpc/init";
 import { mux } from "@/lib/mux";
-import { and, desc, eq, getTableColumns, inArray, isNotNull, lt, or } from "drizzle-orm";
+import { and, desc, eq, getTableColumns, inArray, isNotNull, lt, or, sql } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import {z} from "zod";
 import { UTApi } from "uploadthing/server";
@@ -35,17 +35,19 @@ export const videosRouter = createTRPCRouter({
                 ...getTableColumns(videos),
                 user: users,
                 viewCount: viewCountSubquery,
+                viewCountAdded: videos.viewCountOverride,
                 likeCount: db.$count(videoReactions, and(
-                  eq(videoReactions.videoId, videos.id),
+                eq(videoReactions.videoId, videos.id),
                   eq(videoReactions.type, "like"),
                 )),
+                likeCountAdded: videos.likeCountOverride,
                 dislikeCount: db.$count(videoReactions, and(
                   eq(videoReactions.videoId, videos.id),
-                  eq(videoReactions.type, "dislike"),
-                )),
-              
-              }
-            )
+                    eq(videoReactions.type, "dislike"),
+                  )),
+                  
+               }
+             )
             .from(videos)
             .innerJoin(users, eq(videos.userId, users.id))
             .where(and(
@@ -60,13 +62,19 @@ export const videosRouter = createTRPCRouter({
                     )
                     : undefined
             )).orderBy(
-                desc(viewCountSubquery),
+                desc(sql`${viewCountSubquery} + ${videos.viewCountOverride}`),
                 desc(videos.id)
             ).limit(limit + 1);
           const hasMore = data.length > limit;  
     
           const items = hasMore ? data.slice(0, -1) : data;
-    
+
+          // Apply DB overrides to totals
+          items.forEach((v) => {
+          (v as unknown as { viewCount: number }).viewCount = (v as unknown as { viewCount: number }).viewCount + (v as unknown as { viewCountAdded: number }).viewCountAdded;
+          (v as unknown as { likeCount: number }).likeCount = (v as unknown as { likeCount: number }).likeCount + (v as unknown as { likeCountAdded: number }).likeCountAdded;
+          });
+
           const lastItem = items[items.length - 1];
           const nextCursor = hasMore ?
           {
@@ -108,10 +116,13 @@ export const videosRouter = createTRPCRouter({
               {
                 ...getTableColumns(videos),
                 user: users,
-                viewCount: db.$count(videoViews, eq(videoViews.videoId, videos.id)),                  likeCount: db.$count(videoReactions, and(
+                viewCount: db.$count(videoViews, eq(videoViews.videoId, videos.id)),
+                viewCountAdded: videos.viewCountOverride,
+                likeCount: db.$count(videoReactions, and(
                   eq(videoReactions.videoId, videos.id),
                   eq(videoReactions.type, "like"),
                 )),
+                likeCountAdded: videos.likeCountOverride,
                 dislikeCount: db.$count(videoReactions, and(
                   eq(videoReactions.videoId, videos.id),
                   eq(videoReactions.type, "dislike"),
@@ -142,6 +153,12 @@ export const videosRouter = createTRPCRouter({
           const hasMore = data.length > limit;  
     
           const items = hasMore ? data.slice(0, -1) : data;
+
+          // Apply DB overrides to totals
+          items.forEach((v) => {
+            (v as unknown as { viewCount: number }).viewCount = (v as unknown as { viewCount: number }).viewCount + (v as unknown as { viewCountAdded: number }).viewCountAdded;
+            (v as unknown as { likeCount: number }).likeCount = (v as unknown as { likeCount: number }).likeCount + (v as unknown as { likeCountAdded: number }).likeCountAdded;
+          });
     
           const lastItem = items[items.length - 1];
           const nextCursor = hasMore ?
@@ -173,14 +190,17 @@ export const videosRouter = createTRPCRouter({
               {
                 ...getTableColumns(videos),
                 user: users,
-                viewCount: db.$count(videoViews, eq(videoViews.videoId, videos.id)),                  likeCount: db.$count(videoReactions, and(
+                viewCount: db.$count(videoViews, eq(videoViews.videoId, videos.id)),
+                viewCountAdded: videos.viewCountOverride,
+                likeCount: db.$count(videoReactions, and(
                   eq(videoReactions.videoId, videos.id),
                   eq(videoReactions.type, "like"),
                 )),
+                likeCountAdded: videos.likeCountOverride,
                 dislikeCount: db.$count(videoReactions, and(
-                  eq(videoReactions.videoId, videos.id),
-                  eq(videoReactions.type, "dislike"),
-                )),
+                   eq(videoReactions.videoId, videos.id),
+                   eq(videoReactions.type, "dislike"),
+                 )),
               
               }
             )
@@ -206,6 +226,12 @@ export const videosRouter = createTRPCRouter({
           const hasMore = data.length > limit;  
     
           const items = hasMore ? data.slice(0, -1) : data;
+
+          // Apply DB overrides to totals
+          items.forEach((v) => {
+            (v as unknown as { viewCount: number }).viewCount = (v as unknown as { viewCount: number }).viewCount + (v as unknown as { viewCountAdded: number }).viewCountAdded;
+            (v as unknown as { likeCount: number }).likeCount = (v as unknown as { likeCount: number }).likeCount + (v as unknown as { likeCountAdded: number }).likeCountAdded;
+          });
     
           const lastItem = items[items.length - 1];
           const nextCursor = hasMore ?
@@ -216,8 +242,8 @@ export const videosRouter = createTRPCRouter({
           : null;
           return { items, nextCursor };
     }),
-
-    getOne: baseProcedure
+ 
+     getOne: baseProcedure
         .input(z.object({id: z.string().uuid()}))
         .query(async ( {input, ctx} ) => {
 
@@ -258,12 +284,13 @@ export const videosRouter = createTRPCRouter({
                 .select({
                     ...getTableColumns(videos),
                     user:{
-                        ...getTableColumns(users),
-                        subscriberCount: db.$count(subscriptions, eq(subscriptions.creatorId, users.id)),
-                        viewerSubscribed: isNotNull(viewerSubscriptions.viewerId).mapWith(Boolean),
+                    ...getTableColumns(users),
+                    subscriberCount: sql<number>`COALESCE(${db.$count(subscriptions, eq(subscriptions.creatorId, users.id))}, 0) + COALESCE(${users.subscriberCountOverride}, 0)`,
+                    viewerSubscribed: isNotNull(viewerSubscriptions.viewerId).mapWith(Boolean),
 
                     },
                     viewCount: db.$count(videoViews, eq(videoViews.videoId, videos.id)),
+                    viewCountAdded: videos.viewCountOverride,
                     likeCount: db.$count(
                         videoReactions, 
                         and(
@@ -271,6 +298,7 @@ export const videosRouter = createTRPCRouter({
                             eq(videoReactions.type, "like"),
                         )
                     ),
+                    likeCountAdded: videos.likeCountOverride,
                     dislikeCount: db.$count(
                         videoReactions, 
                         and(
@@ -287,16 +315,17 @@ export const videosRouter = createTRPCRouter({
                 .leftJoin(viewerReactions, eq(viewerReactions.videoId, videos.id))
                 .leftJoin(viewerSubscriptions, eq(viewerSubscriptions.creatorId, users.id))
                 .where(eq(videos.id, input.id))
-                // .groupBy(
-                //     videos.id,
-                //     users.id,
-                //     viewerReactions.type
-                // )
-
-
 
             if(!existingVideo) {
                 throw new TRPCError({code:"NOT_FOUND"})
+            }
+
+            // Apply DB overrides to totals
+            (existingVideo as unknown as { viewCount: number }).viewCount = (existingVideo as unknown as { viewCount: number }).viewCount + ((existingVideo as unknown as { viewCountAdded?: number }).viewCountAdded ?? 0);
+            (existingVideo as unknown as { likeCount: number }).likeCount = (existingVideo as unknown as { likeCount: number }).likeCount + ((existingVideo as unknown as { likeCountAdded?: number }).likeCountAdded ?? 0);
+            const existingUser = (existingVideo as unknown as { user?: { subscriberCount?: number } }).user;
+            if (existingUser) {
+              existingUser.subscriberCount = existingUser.subscriberCount ?? 0;
             }
 
             return existingVideo;
