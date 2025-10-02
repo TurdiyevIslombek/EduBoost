@@ -3,6 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { SignInButton, SignUpButton } from "@clerk/nextjs";
 import { PlayCircleIcon } from "lucide-react";
+import Link from "next/link";
 
 export const LandingNavbar = () => {
   return (
@@ -20,20 +21,20 @@ export const LandingNavbar = () => {
           </div>
 
           {/* Navigation Links */}
-          <div className="hidden md:flex items-center space-x-8">
-            <a href="#features" className="text-gray-600 hover:text-blue-600 transition-colors">
+          <div className="flex items-center space-x-4 md:space-x-8">
+            <a href="#features" className="text-gray-600 hover:text-blue-600 transition-colors text-sm md:text-base">
               Features
             </a>
-            <a href="/about" className="text-gray-600 hover:text-blue-600 transition-colors">
+            <Link href="/about" className="text-gray-600 hover:text-blue-600 transition-colors text-sm md:text-base">
               About
-            </a>
-            <a href="/contact" className="text-gray-600 hover:text-blue-600 transition-colors">
+            </Link>
+            <Link href="/contact" className="text-gray-600 hover:text-blue-600 transition-colors text-sm md:text-base">
               Contact
-            </a>
+            </Link>
           </div>
 
           {/* Auth Buttons */}
-          <div className="flex items-center space-x-3">
+          <div className="hidden sm:flex items-center space-x-3">
             <SignInButton>
               <Button variant="ghost" size="sm" className="text-gray-600 hover:text-blue-600">
                 Sign In
