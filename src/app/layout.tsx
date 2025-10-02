@@ -15,6 +15,9 @@ export const metadata: Metadata = {
     google: "iUsBa2bi345e38sF7_ysmu_s57Lu1DUgJNHDpJ8HYXE",
   },
   metadataBase: new URL(APP_URL),
+  alternates: {
+    canonical: "/",
+  },
 };
 
 export default function RootLayout({
