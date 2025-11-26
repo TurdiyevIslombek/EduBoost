@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import {Inter} from "next/font/google";
 import {ClerkProvider} from "@clerk/nextjs"
+import { SpeedInsights } from "@vercel/speed-insights/next"
 import "./globals.css";
 import { TRPCProvider } from "@/trpc/client";
 import { Toaster } from "@/components/ui/sonner";
@@ -30,6 +31,7 @@ export default function RootLayout({
           <TRPCProvider>
             <Toaster />
             {children}
+            <SpeedInsights />
           </TRPCProvider>
         </body>
       </html>
