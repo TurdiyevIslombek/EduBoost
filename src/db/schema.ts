@@ -1,5 +1,5 @@
 import { relations } from "drizzle-orm";
-import { foreignKey, integer, pgEnum, pgTable, primaryKey, text, timestamp, uniqueIndex, uuid, } from "drizzle-orm/pg-core";
+import { boolean, foreignKey, integer, pgEnum, pgTable, primaryKey, text, timestamp, uniqueIndex, uuid, } from "drizzle-orm/pg-core";
 import {
     createInsertSchema,
     createSelectSchema,
@@ -277,6 +277,33 @@ export const videoViewRelations = relations(videoViews, ({one}) => ({
 export const videoViewSelectSchema = createSelectSchema (videoViews);
 export const videoViewInsertSchema = createInsertSchema (videoViews) ;
 export const videoViewUpdateSchema = createUpdateSchema (videoViews) ;
+
+export const scheduledMetrics = pgTable("scheduled_metrics", {
+    id: uuid("id").primaryKey().defaultRandom(),
+    videoId: uuid("video_id").notNull().references(() => videos.id, {
+        onDelete: "cascade",
+    }),
+    targetViews: integer("target_views").default(0).notNull(),
+    targetLikes: integer("target_likes").default(0).notNull(),
+    appliedViews: integer("applied_views").default(0).notNull(),
+    appliedLikes: integer("applied_likes").default(0).notNull(),
+    startDate: timestamp("start_date").defaultNow().notNull(),
+    endDate: timestamp("end_date").notNull(),
+    isActive: boolean("is_active").default(true).notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const scheduledMetricsRelations = relations(scheduledMetrics, ({ one }) => ({
+    video: one(videos, {
+        fields: [scheduledMetrics.videoId],
+        references: [videos.id],
+    }),
+}));
+
+export const scheduledMetricsSelectSchema = createSelectSchema(scheduledMetrics);
+export const scheduledMetricsInsertSchema = createInsertSchema(scheduledMetrics);
+export const scheduledMetricsUpdateSchema = createUpdateSchema(scheduledMetrics);
 
 
 export const videoReactions = pgTable("video_reactions", {

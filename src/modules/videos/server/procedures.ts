@@ -24,10 +24,20 @@ export const videosRouter = createTRPCRouter({
         .query(async ({ input}) => {
           const {cursor, limit} = input;
 
-          const viewCountSubquery = db.$count(
+            const viewCountSubquery = db.$count(
             videoViews,
             eq(videoViews.videoId, videos.id)
           )
+
+          const cursorLogic = cursor
+            ? or(
+                lt(sql<number>`(${viewCountSubquery} + ${videos.viewCountOverride})`, cursor.viewCount),
+                and(
+                  eq(sql<number>`(${viewCountSubquery} + ${videos.viewCountOverride})`, cursor.viewCount),
+                  lt(videos.id, cursor.id)
+                )
+              )
+            : undefined;
     
           const data = await db
             .select(
@@ -52,17 +62,9 @@ export const videosRouter = createTRPCRouter({
             .innerJoin(users, eq(videos.userId, users.id))
             .where(and(
                 eq(videos.visibility, "public"),  
-                cursor
-                    ? or(
-                        and(
-                        lt(viewCountSubquery, cursor.viewCount),
-                        eq(videos.id, cursor.id)
-                        ),
-                        lt(viewCountSubquery, cursor.viewCount)
-                    )
-                    : undefined
+                cursorLogic
             )).orderBy(
-                desc(sql`${viewCountSubquery} + ${videos.viewCountOverride}`),
+                desc(sql<number>`(${viewCountSubquery} + ${videos.viewCountOverride})`),
                 desc(videos.id)
             ).limit(limit + 1);
           const hasMore = data.length > limit;  
@@ -139,11 +141,11 @@ export const videosRouter = createTRPCRouter({
                 eq(videos.visibility, "public"),  
                 cursor
                     ? or(
-                        and(
                         lt(videos.updatedAt, cursor.updatedAt),
-                        eq(videos.id, cursor.id)
-                        ),
-                        lt(videos.updatedAt, cursor.updatedAt)
+                        and(
+                          eq(videos.updatedAt, cursor.updatedAt),
+                          lt(videos.id, cursor.id)
+                        )
                     )
                     : undefined
             )).orderBy(
@@ -212,11 +214,11 @@ export const videosRouter = createTRPCRouter({
                 userId ? eq(videos.userId, userId) : undefined,
                 cursor
                     ? or(
-                        and(
                         lt(videos.updatedAt, cursor.updatedAt),
-                        eq(videos.id, cursor.id)
-                        ),
-                        lt(videos.updatedAt, cursor.updatedAt)
+                        and(
+                          eq(videos.updatedAt, cursor.updatedAt),
+                          lt(videos.id, cursor.id)
+                        )
                     )
                     : undefined
             )).orderBy(

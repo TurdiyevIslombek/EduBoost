@@ -1,7 +1,7 @@
 import { createTRPCRouter, protectedProcedure } from "@/trpc/init";
 import { db } from "@/db";
-import { videos, users, categories, videoViews, videoReactions, subscriptions } from "@/db/schema";
-import { count, desc, eq, sql, gte } from "drizzle-orm";
+import { videos, users, categories, videoViews, videoReactions, subscriptions, scheduledMetrics } from "@/db/schema";
+import { count, desc, eq, sql, gte, inArray } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { clerkClient } from "@clerk/nextjs/server";
 import { z } from "zod";
@@ -33,7 +33,30 @@ const requireAdmin = protectedProcedure.use(async ({ ctx, next }) => {
   });
 });
 
+import { processScheduledMetrics } from "@/lib/metrics-scheduler";
+import { workflow } from "@/lib/workflow";
+
+// ... existing imports
+
 export const adminRouter = createTRPCRouter({
+  triggerScheduler: requireAdmin.mutation(async () => {
+    try {
+      console.log("Admin manually triggered scheduler");
+      const result = await processScheduledMetrics();
+      return { 
+        success: true, 
+        processed: result.processed,
+        message: `Processed ${result.processed} schedules. Added ${result.viewsAdded} views and ${result.likesAdded} likes.`
+      };
+    } catch (error) {
+      console.error("Manual scheduler error:", error);
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message: `Failed to run scheduler: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      });
+    }
+  }),
+
   getStats: requireAdmin.query(async () => {
     try {
       console.log("Admin getStats: Starting query...");
@@ -464,6 +487,244 @@ export const adminRouter = createTRPCRouter({
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: `Failed to update subscribers: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        });
+      }
+    }),
+
+
+  scheduleMetrics: requireAdmin
+    .input(z.object({
+      videoId: z.string(),
+      targetViews: z.number().int().nonnegative(),
+      targetLikes: z.number().int().nonnegative(),
+      durationDays: z.number().positive().default(7),
+    }))
+    .mutation(async ({ input }) => {
+      try {
+        const startDate = new Date();
+        const endDate = new Date();
+        // Handle fractional days (e.g. 0.1 days)
+        endDate.setTime(endDate.getTime() + (input.durationDays * 24 * 60 * 60 * 1000));
+
+        const [schedule] = await db.insert(scheduledMetrics).values({
+          videoId: input.videoId,
+          targetViews: input.targetViews,
+          targetLikes: input.targetLikes,
+          appliedViews: 0,
+          appliedLikes: 0,
+          startDate,
+          endDate,
+          isActive: true,
+        }).returning();
+
+        // Trigger Upstash Workflow
+        try {
+            // Determine interval based on duration to get smooth updates
+            // Short duration (< 1 day) -> 15 mins
+            // Medium duration (1-3 days) -> 30 mins
+            // Long duration (> 3 days) -> 60 mins
+            let intervalMinutes = 60;
+            if (input.durationDays < 1) intervalMinutes = 15;
+            else if (input.durationDays <= 3) intervalMinutes = 30;
+
+            await workflow.trigger({
+                url: `${process.env.UPSTASH_WORKFLOW_URL || process.env.NEXT_PUBLIC_APP_URL || "https://edu-boost.vercel.app"}/api/workflows/distribute-metrics`,
+                body: { 
+                    scheduleId: schedule.id,
+                    intervalMinutes
+                },
+                retries: 3
+            });
+            console.log("Triggered workflow for schedule:", schedule.id);
+        } catch (wfError) {
+            console.error("Failed to trigger workflow (fallback to cron will happen if set up):", wfError);
+        }
+
+        return { success: true, message: `Scheduled ${input.targetViews} views and ${input.targetLikes} likes over ${input.durationDays} days` };
+      } catch (error) {
+        console.error("Admin scheduleMetrics error:", error);
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: `Failed to schedule metrics: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        });
+      }
+    }),
+
+
+  getScheduledMetrics: requireAdmin
+    .input(z.object({
+      videoId: z.string(),
+    }))
+    .query(async ({ input }) => {
+      try {
+        const scheduled = await db
+          .select()
+          .from(scheduledMetrics)
+          .where(eq(scheduledMetrics.videoId, input.videoId))
+          .orderBy(desc(scheduledMetrics.createdAt));
+
+        return scheduled;
+      } catch (error) {
+        console.error("Admin getScheduledMetrics error:", error);
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: `Failed to get scheduled metrics: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        });
+      }
+    }),
+
+  getAllScheduledMetrics: requireAdmin.query(async () => {
+    try {
+      const scheduled = await db
+        .select({
+          id: scheduledMetrics.id,
+          targetViews: scheduledMetrics.targetViews,
+          targetLikes: scheduledMetrics.targetLikes,
+          appliedViews: scheduledMetrics.appliedViews,
+          appliedLikes: scheduledMetrics.appliedLikes,
+          startDate: scheduledMetrics.startDate,
+          endDate: scheduledMetrics.endDate,
+          isActive: scheduledMetrics.isActive,
+          createdAt: scheduledMetrics.createdAt,
+          video: {
+            id: videos.id,
+            title: videos.title,
+            thumbnailUrl: videos.thumbnailUrl,
+          }
+        })
+        .from(scheduledMetrics)
+        .innerJoin(videos, eq(scheduledMetrics.videoId, videos.id))
+        .orderBy(desc(scheduledMetrics.createdAt));
+
+      return scheduled;
+    } catch (error) {
+      console.error("Admin getAllScheduledMetrics error:", error);
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message: "Failed to get all scheduled metrics",
+      });
+    }
+  }),
+
+  deleteScheduledMetric: requireAdmin
+    .input(z.object({
+      scheduleId: z.string(),
+    }))
+    .mutation(async ({ input }) => {
+      try {
+        await db
+          .delete(scheduledMetrics)
+          .where(eq(scheduledMetrics.id, input.scheduleId));
+
+        return { success: true, message: "Schedule deleted successfully" };
+      } catch (error) {
+        console.error("Admin deleteScheduledMetric error:", error);
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: `Failed to delete schedule: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        });
+      }
+    }),
+
+  scheduleMetricsBulk: requireAdmin
+    .input(z.object({
+      videoIds: z.array(z.string()),
+      targetViews: z.number().int().nonnegative(),
+      targetLikes: z.number().int().nonnegative(),
+      durationDays: z.number().positive().default(7),
+    }))
+    .mutation(async ({ input }) => {
+      try {
+        const startDate = new Date();
+        const endDate = new Date();
+        // Handle fractional days
+        endDate.setTime(endDate.getTime() + (input.durationDays * 24 * 60 * 60 * 1000));
+
+        const values = input.videoIds.map(videoId => ({
+          videoId,
+          targetViews: input.targetViews,
+          targetLikes: input.targetLikes,
+          appliedViews: 0,
+          appliedLikes: 0,
+          startDate,
+          endDate,
+          isActive: true,
+        }));
+
+        const insertedSchedules = await db.insert(scheduledMetrics).values(values).returning();
+
+        // Trigger Upstash Workflow for EACH schedule
+        // (Batching is better, but workflow expects single ID for now. We can improve later)
+        try {
+          const intervalMinutes = input.durationDays < 1 ? 15 : (input.durationDays <= 3 ? 30 : 60);
+          const baseUrl = process.env.UPSTASH_WORKFLOW_URL || process.env.NEXT_PUBLIC_APP_URL || "https://edu-boost.vercel.app";
+          
+          // Trigger in parallel
+          await Promise.allSettled(insertedSchedules.map(schedule => 
+             workflow.trigger({
+                url: `${baseUrl}/api/workflows/distribute-metrics`,
+                body: { 
+                    scheduleId: schedule.id,
+                    intervalMinutes
+                },
+                retries: 3
+            })
+          ));
+          
+          console.log(`Triggered ${insertedSchedules.length} workflows for bulk schedule`);
+        } catch (wfError) {
+          console.error("Failed to trigger workflows (fallback to cron will happen if set up):", wfError);
+        }
+
+        return { 
+          success: true, 
+          message: `Scheduled ${input.targetViews} views and ${input.targetLikes} likes for ${input.videoIds.length} video(s) over ${input.durationDays} days` 
+        };
+      } catch (error) {
+        console.error("Admin scheduleMetricsBulk error:", error);
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: `Failed to schedule metrics: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        });
+      }
+    }),
+
+  updateMetricsBulk: requireAdmin
+    .input(z.object({
+      videoIds: z.array(z.string()),
+      views: z.number().int().nonnegative().optional(),
+      likes: z.number().int().nonnegative().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      try {
+        const patch: Partial<typeof videos.$inferInsert> = {};
+        // Only set fields if they are provided (allowing partial updates)
+        if (input.views !== undefined) {
+          patch.viewCountOverride = input.views;
+        }
+        if (input.likes !== undefined) {
+          patch.likeCountOverride = input.likes;
+        }
+
+        if (Object.keys(patch).length > 0) {
+          await db
+            .update(videos)
+            .set({
+              ...patch,
+              updatedAt: new Date(),
+            })
+            .where(inArray(videos.id, input.videoIds));
+        }
+
+        return { 
+          success: true, 
+          message: `Updated metrics for ${input.videoIds.length} video(s)` 
+        };
+      } catch (error) {
+        console.error("Admin updateMetricsBulk error:", error);
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: `Failed to update metrics: ${error instanceof Error ? error.message : 'Unknown error'}`,
         });
       }
     }),

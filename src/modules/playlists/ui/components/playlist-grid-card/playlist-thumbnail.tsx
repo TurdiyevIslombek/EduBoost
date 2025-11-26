@@ -45,6 +45,7 @@ export const PlaylistThumbnail = ({
 
                 <div className="relative overflow-hidden w-full rounded-xl aspect-video">
                     <Image
+                        unoptimized={true}
                         src={imageUrl || "/playlist_placeholder.svg"}
                         alt={title}
                         className="w-full h-full object-cover"
