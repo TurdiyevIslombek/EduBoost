@@ -7,49 +7,18 @@ import { AdminErrorBoundary } from "@/components/admin-error-boundary";
 import { redirect } from "next/navigation";
 import { useEffect } from "react";
 
-import { SchedulerProvider, useScheduler } from "../components/scheduler-context";
-
 interface AdminLayoutProps {
   children: React.ReactNode;
 }
 
-const AdminLayoutInner = ({ children }: AdminLayoutProps) => {
+export const AdminLayout = ({ children }: AdminLayoutProps) => {
   const { user, isLoaded } = useUser();
-  const { isRunning, interval: schedulerInterval } = useScheduler();
 
   useEffect(() => {
     if (isLoaded && (!user || user.emailAddresses[0]?.emailAddress !== "turdiyevislombek01@gmail.com")) {
       redirect("/");
     }
   }, [user, isLoaded]);
-
-  // Auto-scheduler for development environment to simulate cron job
-  useEffect(() => {
-    // Only run in development or if explicitly enabled
-    const isDev = process.env.NODE_ENV === 'development';
-    if (!isDev || !isRunning) return; // Check isRunning from context
-
-    const runScheduler = async () => {
-      try {
-        // Quietly trigger the scheduler
-        const res = await fetch('/api/test-scheduler');
-        const data = await res.json();
-        if (data.processed > 0) {
-          console.log(`[Dev Scheduler] Processed ${data.processed} scheduled metrics`);
-        }
-      } catch (e) {
-        console.error("[Dev Scheduler] Failed to trigger:", e);
-      }
-    };
-
-    // Run immediately on start/resume
-    runScheduler();
-
-    // Run based on configured interval
-    const timer = setInterval(runScheduler, schedulerInterval);
-    
-    return () => clearInterval(timer);
-  }, [isRunning, schedulerInterval]); // Re-run effect when settings change
 
   if (!isLoaded) {
     return (
@@ -77,13 +46,5 @@ const AdminLayoutInner = ({ children }: AdminLayoutProps) => {
         </main>
       </div>
     </div>
-  );
-};
-
-export const AdminLayout = ({ children }: AdminLayoutProps) => {
-  return (
-    <SchedulerProvider>
-      <AdminLayoutInner>{children}</AdminLayoutInner>
-    </SchedulerProvider>
   );
 };

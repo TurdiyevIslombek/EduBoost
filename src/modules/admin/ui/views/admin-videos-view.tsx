@@ -30,14 +30,11 @@ import {
   WrenchIcon,
   RefreshCwIcon,
   CalendarClockIcon,
-  PauseCircleIcon,
-  PlayCircleIcon,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
-import { useScheduler } from "../components/scheduler-context";
 import { formatDistanceToNow } from "date-fns";
 
 export const AdminVideosView = () => {
@@ -53,8 +50,6 @@ export const AdminVideosView = () => {
   });
   const utils = trpc.useContext();
   
-  // Scheduler Context
-  const { isRunning, setIsRunning, interval: schedulerInterval, setInterval: setSchedulerInterval } = useScheduler();
   const [manageSchedulesOpen, setManageSchedulesOpen] = useState(false);
   const [selectedSchedules, setSelectedSchedules] = useState<string[]>([]);
 
@@ -217,39 +212,6 @@ export const AdminVideosView = () => {
           <p className="text-gray-600 mt-2">Manage all videos on the platform</p>
         </div>
         <div className="flex gap-2 items-center">
-          <div className="flex items-center bg-white rounded-md border shadow-sm mr-2 h-9">
-            {process.env.NODE_ENV === 'development' && (
-              <>
-                <Button
-                  onClick={() => setIsRunning(!isRunning)}
-                  variant="ghost"
-                  size="sm"
-                  className={`h-full rounded-none rounded-l-md border-r px-3 ${isRunning ? "text-green-600 hover:text-green-700 hover:bg-green-50" : "text-red-600 hover:text-red-700 hover:bg-red-50"}`}
-                  title={isRunning ? "Dev Simulator: Running (Client-side polling)" : "Dev Simulator: Stopped"}
-                >
-                  {isRunning ? <PauseCircleIcon className="size-4 mr-2" /> : <PlayCircleIcon className="size-4 mr-2" />}
-                  {isRunning ? "DEV: ON" : "DEV: OFF"}
-                </Button>
-                <Select 
-                  value={String(schedulerInterval)} 
-                  onValueChange={(val) => setSchedulerInterval(Number(val))}
-                >
-                  <SelectTrigger className="w-[110px] h-full rounded-none rounded-r-md border-0 focus:ring-0 bg-transparent text-xs focus:ring-offset-0">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="5000">Every 5s</SelectItem>
-                    <SelectItem value="10000">Every 10s</SelectItem>
-                    <SelectItem value="30000">Every 30s</SelectItem>
-                    <SelectItem value="60000">Every 1m</SelectItem>
-                    <SelectItem value="300000">Every 5m</SelectItem>
-                    <SelectItem value="3600000">Every 1h</SelectItem>
-                  </SelectContent>
-                </Select>
-              </>
-            )}
-          </div>
-
           <Button
             onClick={() => setManageSchedulesOpen(true)}
             variant="outline"

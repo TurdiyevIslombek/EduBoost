@@ -16,6 +16,7 @@ async function ensureSchema() {
       await db.execute(sql`ALTER TABLE "videos" ADD COLUMN IF NOT EXISTS "view_count_override" integer NOT NULL DEFAULT 0`);
       await db.execute(sql`ALTER TABLE "videos" ADD COLUMN IF NOT EXISTS "like_count_override" integer NOT NULL DEFAULT 0`);
       await db.execute(sql`ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "subscriber_count_override" integer NOT NULL DEFAULT 0`);
+      await db.execute(sql`ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "last_seen_at" timestamp DEFAULT NOW()`);
 
       // Performance: ensure critical indexes exist
       await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_users_clerk_id ON "users" ("clerk_id")`);
@@ -85,6 +86,17 @@ export const protectedProcedure = t.procedure.use(async function isAuthed (opts)
 
   if(!success) {
     throw new TRPCError({ code: "TOO_MANY_REQUESTS" });
+  }
+
+  // Update lastSeenAt for online status tracking (non-blocking, every 2 mins max)
+  const now = new Date();
+  const lastSeen = user.lastSeenAt;
+  if (!lastSeen || now.getTime() - lastSeen.getTime() > 2 * 60 * 1000) {
+    db.update(users)
+      .set({ lastSeenAt: now })
+      .where(eq(users.id, user.id))
+      .execute()
+      .catch(() => {}); // Fire-and-forget, don't block request
   }
 
   return opts.next({

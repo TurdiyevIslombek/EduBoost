@@ -4,9 +4,14 @@ import { processScheduledMetrics } from "@/lib/metrics-scheduler";
 export async function GET(request: NextRequest) {
   try {
     const authHeader = request.headers.get("authorization");
-    const cronSecret = process.env.CRON_SECRET || "dev-secret-key";
+    const vercelCronHeader = request.headers.get("x-vercel-cron");
+    const cronSecret = process.env.CRON_SECRET;
 
-    if (authHeader !== `Bearer ${cronSecret}`) {
+    const isVercelCron = vercelCronHeader === "1";
+    const isAuthorized = cronSecret && authHeader === `Bearer ${cronSecret}`;
+    const isDev = process.env.NODE_ENV === "development";
+
+    if (!isVercelCron && !isAuthorized && !isDev) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 

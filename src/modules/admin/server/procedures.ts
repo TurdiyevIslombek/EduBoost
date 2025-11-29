@@ -225,6 +225,7 @@ export const adminRouter = createTRPCRouter({
           name: users.name,
           imageUrl: users.imageUrl,
           createdAt: users.createdAt,
+          lastSeenAt: users.lastSeenAt,
           videoCount: count(videos.id),
           subscriberCountReal: count(subscriptions.creatorId),
           subscriberCountAdded: users.subscriberCountOverride,
@@ -232,7 +233,7 @@ export const adminRouter = createTRPCRouter({
         .from(users)
         .leftJoin(videos, eq(users.id, videos.userId))
         .leftJoin(subscriptions, eq(users.id, subscriptions.creatorId))
-        .groupBy(users.id, users.clerkId, users.name, users.imageUrl, users.createdAt, users.subscriberCountOverride)
+        .groupBy(users.id, users.clerkId, users.name, users.imageUrl, users.createdAt, users.subscriberCountOverride, users.lastSeenAt)
         .orderBy(desc(users.createdAt));
 
       return usersWithCounts;

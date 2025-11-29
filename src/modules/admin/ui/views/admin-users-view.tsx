@@ -164,10 +164,31 @@ interface UserRowProps {
     name: string;
     imageUrl: string;
     createdAt: Date;
+    lastSeenAt: Date | null;
     videoCount: number;
     subscriberCountReal: number;
     subscriberCountAdded: number;
   };
+}
+
+function getOnlineStatus(lastSeenAt: Date | null): { isOnline: boolean; status: string; color: string } {
+  if (!lastSeenAt) {
+    return { isOnline: false, status: "Never seen", color: "text-gray-400" };
+  }
+  
+  const now = new Date();
+  const diffMs = now.getTime() - new Date(lastSeenAt).getTime();
+  const diffMins = Math.floor(diffMs / (1000 * 60));
+  
+  if (diffMins < 5) {
+    return { isOnline: true, status: "Online", color: "text-green-500" };
+  } else if (diffMins < 30) {
+    return { isOnline: false, status: `${diffMins}m ago`, color: "text-yellow-500" };
+  } else if (diffMins < 60) {
+    return { isOnline: false, status: `${diffMins}m ago`, color: "text-orange-500" };
+  } else {
+    return { isOnline: false, status: formatDistanceToNow(new Date(lastSeenAt), { addSuffix: true }), color: "text-gray-400" };
+  }
 }
 
 const UserRow = ({ user }: UserRowProps) => {
@@ -204,19 +225,36 @@ const UserRow = ({ user }: UserRowProps) => {
     await updateSubsMutation.mutateAsync({ userId: user.id, subscribers: n });
   };
 
+  const onlineStatus = getOnlineStatus(user.lastSeenAt);
+
   return (
     <div className="grid grid-cols-12 gap-4 p-4 border border-gray-200 rounded-lg hover:bg-gray-50/50 transition-colors">
       <div className="col-span-4 flex items-center gap-3">
-        <AdminImage
-          src={user.imageUrl}
-          alt={user.name}
-          width={40}
-          height={40}
-          className="rounded-full object-cover"
-          fallback="/user-placeholder.svg"
-        />
+        <div className="relative">
+          <AdminImage
+            src={user.imageUrl}
+            alt={user.name}
+            width={40}
+            height={40}
+            className="rounded-full object-cover"
+            fallback="/user-placeholder.svg"
+          />
+          <div 
+            className={`absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-white ${
+              onlineStatus.isOnline ? 'bg-green-500' : 
+              onlineStatus.color.includes('yellow') ? 'bg-yellow-500' : 
+              onlineStatus.color.includes('orange') ? 'bg-orange-500' : 'bg-gray-400'
+            }`}
+            title={onlineStatus.status}
+          />
+        </div>
         <div className="space-y-1">
-          <p className="font-medium text-sm">{user.name}</p>
+          <div className="flex items-center gap-2">
+            <p className="font-medium text-sm">{user.name}</p>
+            <span className={`text-xs ${onlineStatus.color}`}>
+              {onlineStatus.isOnline ? "● Online" : onlineStatus.status}
+            </span>
+          </div>
           <p className="text-xs text-gray-500">ID: {user.id.slice(0, 8)}...</p>
         </div>
       </div>

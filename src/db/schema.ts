@@ -59,6 +59,7 @@ export const users = pgTable("users", {
     bannerKey: text("banner_key"),
     imageUrl: text("image_url").notNull(),
     subscriberCountOverride: integer("subscriber_count_override").default(0).notNull(),
+    lastSeenAt: timestamp("last_seen_at").defaultNow(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (t) => [uniqueIndex("clerk_id_idx").on(t.clerkId)]);
