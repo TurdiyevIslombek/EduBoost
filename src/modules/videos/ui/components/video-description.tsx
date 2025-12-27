@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils";
 import { ChevronUpIcon, ChevronDownIcon } from "lucide-react";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 
 interface VideoDescriptionProps {
     compactViews: string;
@@ -10,6 +10,29 @@ interface VideoDescriptionProps {
     description?: string | null;
 }
 
+const linkify = (text: string) => {
+    const urlRegex = /(https?:\/\/[^\s]+)/g;
+    const parts = text.split(urlRegex);
+    
+    return parts.map((part, index) => {
+        if (part.match(urlRegex)) {
+            return (
+                <a
+                    key={index}
+                    href={part}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                    className="text-emerald-600 hover:text-emerald-700 hover:underline"
+                >
+                    {part}
+                </a>
+            );
+        }
+        return part;
+    });
+};
+
 export const VideoDescription = ({
     compactViews,
     expandedViews,
@@ -18,6 +41,11 @@ export const VideoDescription = ({
     description,
 }: VideoDescriptionProps) => {
     const [isExpanded, setIsExpanded] = useState(false);
+
+    const formattedDescription = useMemo(() => {
+        if (!description) return "No description";
+        return linkify(description);
+    }, [description]);
 
     return (
         <div 
@@ -40,7 +68,7 @@ export const VideoDescription = ({
 
                     )}
                 >
-                    {description || "No description"}
+                    {formattedDescription}
                 </p>
                 <div className="flex items-center gap-1 mt-4 text-sm font-medium">
                     {isExpanded ? (

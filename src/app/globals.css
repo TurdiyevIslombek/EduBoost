@@ -23,7 +23,7 @@
     transform: translateY(0px) rotate(0deg);
   }
   50% {
-    transform: translateY(-20px) rotate(5deg);
+    transform: translateY(-20px) rotate(2deg);
   }
 }
 
@@ -32,7 +32,7 @@
     transform: translateY(0px) rotate(0deg);
   }
   50% {
-    transform: translateY(-15px) rotate(-3deg);
+    transform: translateY(-15px) rotate(-2deg);
   }
 }
 
@@ -41,7 +41,7 @@
     transform: translateY(0px) rotate(0deg);
   }
   50% {
-    transform: translateY(-25px) rotate(8deg);
+    transform: translateY(-25px) rotate(3deg);
   }
 }
 
@@ -50,7 +50,78 @@
     transform: translateY(0px) rotate(0deg);
   }
   50% {
-    transform: translateY(-18px) rotate(-5deg);
+    transform: translateY(-18px) rotate(-3deg);
+  }
+}
+
+@keyframes fade-in-up {
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-in {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes scale-in {
+  0% {
+    opacity: 0;
+    transform: scale(0);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes slide-in-left {
+  0% {
+    opacity: 0;
+    transform: translateX(-30px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slide-in-right {
+  0% {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes gradient-shift {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(16, 185, 129, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 40px rgba(16, 185, 129, 0.5);
   }
 }
 
@@ -63,18 +134,76 @@
 }
 
 .animate-float-delay-1 {
-  animation: float-delay-1 6s ease-in-out infinite;
+  animation: float-delay-1 7s ease-in-out infinite;
   animation-delay: 1s;
 }
 
 .animate-float-delay-2 {
-  animation: float-delay-2 6s ease-in-out infinite;
+  animation: float-delay-2 8s ease-in-out infinite;
   animation-delay: 2s;
 }
 
 .animate-float-delay-3 {
   animation: float-delay-3 6s ease-in-out infinite;
   animation-delay: 3s;
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 0.6s ease-out forwards;
+  opacity: 0;
+}
+
+.animate-fade-in {
+  animation: fade-in 0.5s ease-out forwards;
+  opacity: 0;
+}
+
+.animate-scale-in {
+  animation: scale-in 0.4s ease-out forwards;
+  opacity: 0;
+}
+
+.animate-slide-in-left {
+  animation: slide-in-left 0.6s ease-out forwards;
+  opacity: 0;
+}
+
+.animate-slide-in-right {
+  animation: slide-in-right 0.6s ease-out forwards;
+  opacity: 0;
+}
+
+.animate-gradient {
+  background-size: 200% 200%;
+  animation: gradient-shift 3s ease infinite;
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+.animation-delay-100 {
+  animation-delay: 100ms;
+}
+
+.animation-delay-200 {
+  animation-delay: 200ms;
+}
+
+.animation-delay-300 {
+  animation-delay: 300ms;
+}
+
+.animation-delay-400 {
+  animation-delay: 400ms;
+}
+
+.animation-delay-500 {
+  animation-delay: 500ms;
+}
+
+.animation-delay-1000 {
+  animation-delay: 1s;
 }
 
 .animation-delay-2000 {
@@ -85,83 +214,82 @@
   animation-delay: 4s;
 }
 
-.animation-delay-1000 {
-  animation-delay: 1s;
-}
-
 body {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
 }
 
+/* Professional Education Theme - Emerald/Teal Primary */
 @layer base {
   :root {
     --background: 0 0% 100%;
-    --foreground: 0 0% 3.9%;
+    --foreground: 210 20% 12%;
     --card: 0 0% 100%;
-    --card-foreground: 0 0% 3.9%;
+    --card-foreground: 210 20% 12%;
     --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 3.9%;
-    --primary: 0 0% 9%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 0 0% 96.1%;
-    --secondary-foreground: 0 0% 9%;
-    --muted: 0 0% 96.1%;
-    --muted-foreground: 0 0% 45.1%;
-    --accent: 0 0% 96.1%;
-    --accent-foreground: 0 0% 9%;
-    --destructive: 0 84.2% 60.2%;
+    --popover-foreground: 210 20% 12%;
+    /* Emerald primary for education feel */
+    --primary: 160 84% 39%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 160 20% 96%;
+    --secondary-foreground: 160 84% 30%;
+    --muted: 210 15% 96%;
+    --muted-foreground: 210 10% 45%;
+    /* Teal accent */
+    --accent: 172 66% 50%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 89.8%;
-    --input: 0 0% 89.8%;
-    --ring: 0 0% 3.9%;
-    --chart-1: 12 76% 61%;
-    --chart-2: 173 58% 39%;
-    --chart-3: 197 37% 24%;
-    --chart-4: 43 74% 66%;
-    --chart-5: 27 87% 67%;
-    --radius: 0.5rem;
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 240 5.9% 10%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 240 4.8% 95.9%;
-    --sidebar-accent-foreground: 240 5.9% 10%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --border: 210 15% 90%;
+    --input: 210 15% 90%;
+    --ring: 160 84% 39%;
+    --chart-1: 160 84% 39%;
+    --chart-2: 172 66% 50%;
+    --chart-3: 199 89% 48%;
+    --chart-4: 45 93% 47%;
+    --chart-5: 280 65% 60%;
+    --radius: 0.75rem;
+    --sidebar-background: 160 20% 98%;
+    --sidebar-foreground: 210 20% 20%;
+    --sidebar-primary: 160 84% 39%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 160 30% 94%;
+    --sidebar-accent-foreground: 160 84% 30%;
+    --sidebar-border: 160 20% 90%;
+    --sidebar-ring: 160 84% 39%;
   }
   .dark {
-    --background: 0 0% 3.9%;
+    --background: 210 20% 8%;
     --foreground: 0 0% 98%;
-    --card: 0 0% 3.9%;
+    --card: 210 20% 10%;
     --card-foreground: 0 0% 98%;
-    --popover: 0 0% 3.9%;
+    --popover: 210 20% 10%;
     --popover-foreground: 0 0% 98%;
-    --primary: 0 0% 98%;
-    --primary-foreground: 0 0% 9%;
-    --secondary: 0 0% 14.9%;
+    --primary: 160 70% 45%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 210 15% 15%;
     --secondary-foreground: 0 0% 98%;
-    --muted: 0 0% 14.9%;
-    --muted-foreground: 0 0% 63.9%;
-    --accent: 0 0% 14.9%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 62.8% 30.6%;
+    --muted: 210 15% 15%;
+    --muted-foreground: 210 10% 60%;
+    --accent: 172 60% 45%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 62% 40%;
     --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 14.9%;
-    --input: 0 0% 14.9%;
-    --ring: 0 0% 83.1%;
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
+    --border: 210 15% 18%;
+    --input: 210 15% 18%;
+    --ring: 160 70% 45%;
+    --chart-1: 160 70% 50%;
+    --chart-2: 172 60% 50%;
+    --chart-3: 199 80% 55%;
+    --chart-4: 45 85% 55%;
+    --chart-5: 280 60% 60%;
+    --sidebar-background: 210 20% 8%;
+    --sidebar-foreground: 0 0% 95%;
+    --sidebar-primary: 160 70% 45%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-accent: 210 15% 15%;
+    --sidebar-accent-foreground: 0 0% 95%;
+    --sidebar-border: 210 15% 18%;
+    --sidebar-ring: 160 70% 45%;
   }
 }
 
@@ -170,6 +298,45 @@ body {
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
+  }
+}
+
+/* Education-focused utility classes */
+@layer utilities {
+  .edu-gradient {
+    @apply bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600;
+  }
+  
+  .edu-gradient-subtle {
+    @apply bg-gradient-to-br from-emerald-50 via-white to-teal-50;
+  }
+  
+  .edu-text-gradient {
+    @apply bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent;
+  }
+  
+  .edu-card {
+    @apply bg-white border border-slate-200/60 rounded-2xl shadow-sm hover:shadow-lg hover:border-emerald-200/50 transition-all duration-300;
+  }
+  
+  .edu-card-hover {
+    @apply hover:-translate-y-1 hover:shadow-xl;
+  }
+  
+  .edu-section {
+    @apply py-20 lg:py-28;
+  }
+  
+  .edu-container {
+    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+
+  .glass {
+    @apply bg-white/80 backdrop-blur-xl border border-white/20;
+  }
+
+  .glass-dark {
+    @apply bg-slate-900/80 backdrop-blur-xl border border-white/10;
   }
 }

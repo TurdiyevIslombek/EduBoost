@@ -13,25 +13,34 @@ export const StudioSidebar = () => {
     const pathname = usePathname();
 
     return(
-        <Sidebar className="pt-16 z-40" collapsible="icon">
-            <SidebarContent className="bg-background">
+        <Sidebar className="pt-16 z-40 border-none" collapsible="icon">
+            <SidebarContent className="bg-gradient-to-b from-emerald-700 via-emerald-800 to-teal-900 text-white">
                 <SidebarGroup>
                     <SidebarMenu>
                         <StudioSidebarHeader />
                         <SidebarMenuItem>
-                            <SidebarMenuButton isActive={pathname === "/studio"} tooltip="Content" asChild>
+                            <SidebarMenuButton 
+                                isActive={pathname === "/studio"} 
+                                tooltip="Content" 
+                                asChild
+                                className="text-emerald-100/80 hover:text-white hover:bg-white/10 data-[active=true]:bg-white/20 data-[active=true]:text-white transition-colors"
+                            >
                             <Link prefetch  href="/studio">
                             <VideoIcon className="size-5"/>
-                            <span className="text-sm">Content</span>
+                            <span className="text-sm font-medium">Content</span>
                             </Link>
                             </SidebarMenuButton>
                         </SidebarMenuItem>
-                        <Separator />
+                        <Separator className="bg-emerald-600/40" />
                         <SidebarMenuItem>
-                            <SidebarMenuButton tooltip="Exit Studio" asChild>
+                            <SidebarMenuButton 
+                                tooltip="Exit Studio" 
+                                asChild
+                                className="text-emerald-100/80 hover:text-white hover:bg-white/10 transition-colors"
+                            >
                             <Link prefetch  href="/">
                             <LogOutIcon className="size-5"/>
-                            <span className="text-sm">Exit Studio</span>
+                            <span className="text-sm font-medium">Exit Studio</span>
                             </Link>
                             </SidebarMenuButton>
                         </SidebarMenuItem>

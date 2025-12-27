@@ -10,11 +10,11 @@ const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: {
-    default: "EduBoost - Online Learning Platform",
+    default: "EduBoost - Online Learning Platform | EduBoostOnline",
     template: "%s | EduBoost",
   },
-  description: "EduBoost is the best online learning platform to boost your education with high-quality video courses and tutorials.",
-  keywords: ["education", "online learning", "courses", "tutorials", "eduboost", "video courses"],
+  description: "EduBoost (EduBoostOnline) is the best online learning platform to boost your education with high-quality video courses and tutorials. Learn at eduboostonline.com",
+  keywords: ["eduboost", "eduboostonline", "edu boost", "eduboost online", "education", "online learning", "courses", "tutorials", "video courses"],
   metadataBase: new URL("https://www.eduboostonline.com"),
   openGraph: {
     title: "EduBoost - Online Learning Platform",

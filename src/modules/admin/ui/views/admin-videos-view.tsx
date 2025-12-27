@@ -585,6 +585,7 @@ const VideoRow = ({ video, isSelected, onToggleSelect }: VideoRowProps) => {
     views: "",
     likes: "",
     durationDays: "7",
+    createdAt: video.createdAt ? new Date(video.createdAt).toISOString().slice(0, 16) : "",
   });
 
   const deleteVideoMutation = trpc.admin.deleteVideo.useMutation({
@@ -675,6 +676,7 @@ const VideoRow = ({ video, isSelected, onToggleSelect }: VideoRowProps) => {
         thumbnailUrl: form.thumbnailUrl || null,
         visibility: form.visibility,
         categoryId: form.categoryId ? form.categoryId : null,
+        createdAt: form.createdAt ? new Date(form.createdAt) : undefined,
       });
       
       if (scheduleMode) {
@@ -828,6 +830,16 @@ const VideoRow = ({ video, isSelected, onToggleSelect }: VideoRowProps) => {
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor={`createdAt-${video.id}`}>Posted Date</Label>
+              <Input
+                id={`createdAt-${video.id}`}
+                type="datetime-local"
+                value={form.createdAt}
+                onChange={(e) => setForm((f) => ({ ...f, createdAt: e.target.value }))}
+              />
+              <p className="text-xs text-muted-foreground">Change when this video appears to have been posted</p>
             </div>
             <div className="space-y-4">
               <div className="flex items-center justify-between">

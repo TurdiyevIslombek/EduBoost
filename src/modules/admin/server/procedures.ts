@@ -422,6 +422,7 @@ export const adminRouter = createTRPCRouter({
       thumbnailUrl: z.string().url().nullable().optional(),
       categoryId: z.string().uuid().nullable().optional(),
       visibility: z.enum(["public","private"]).optional(),
+      createdAt: z.date().optional(),
     }))
     .mutation(async ({ input }) => {
       try {

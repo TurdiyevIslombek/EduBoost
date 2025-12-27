@@ -44,15 +44,15 @@ export const SearchInputSuspense = () => {
 
 
     return(
-        <form className="flex w-full max-w-[600px] shadow-lg rounded-full overflow-hidden" onSubmit={handleSearch}>
+        <form className="flex w-full max-w-[600px] shadow-lg rounded-xl overflow-hidden border border-slate-200/60" onSubmit={handleSearch}>
             {/* Search input */}
             <div className="relative w-full">
                 <input 
                 value={value}
                 onChange={(e) => setValue(e.target.value)}
                 type="text"
-                placeholder="Search"
-                className="w-full p-4 py-3 pr-12 bg-white/90 backdrop-blur-sm border-0 focus:outline-none focus:ring-2 focus:ring-blue-400 placeholder-gray-500 font-medium"
+                placeholder="Search courses..."
+                className="w-full p-4 py-3 pr-12 bg-white border-0 focus:outline-none focus:ring-2 focus:ring-emerald-400 placeholder-slate-400 font-medium text-slate-700"
                 
                 />
                 {value && (
@@ -61,9 +61,9 @@ export const SearchInputSuspense = () => {
                         variant="ghost"
                         size="icon"
                         onClick={() => setValue("")}
-                        className="absolute top-1/2 right-2 -translate-y-1/2 rounded-full"
+                        className="absolute top-1/2 right-2 -translate-y-1/2 rounded-full hover:bg-slate-100"
                     >
-                        <XIcon className="text-gray-500"/>
+                        <XIcon className="text-slate-500"/>
                     </Button>
                 )}
             </div>
@@ -73,7 +73,7 @@ export const SearchInputSuspense = () => {
             <button
                 disabled={!value.trim()}
                 type="submit"
-                className="px-5 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 font-semibold"
+                className="px-5 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 text-white hover:from-emerald-700 hover:to-teal-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 font-semibold"
             >
                 <SearchIcon className="size-5"/>
 

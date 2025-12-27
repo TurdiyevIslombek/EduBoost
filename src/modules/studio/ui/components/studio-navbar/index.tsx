@@ -7,15 +7,17 @@ import { StudioUploadModal } from "../studio-upload-modal"
 
 export const StudioNavbar = () =>{
     return(
-        <nav className="fixed top-0 left-0 right-0 h-16 bg-white flex items-center px-2 pr-5 z-50 border-b shadow-md">
+        <nav className="fixed top-0 left-0 right-0 h-16 bg-white/90 backdrop-blur-xl border-b border-emerald-100/50 flex items-center px-2 pr-5 z-50 shadow-sm">
             <div className="flex items-center gap-4 w-full">
                 {/* Menu and Logo */}
                 <div className="flex items-center flex-shrink-0 ">
-                    <SidebarTrigger/>
+                    <SidebarTrigger className="text-slate-700 hover:bg-emerald-50 hover:text-emerald-600"/>
                     <Link prefetch  href="/studio" className="hidden md:block">
-                        <div className="p-4 flex items-center gap-1">
-                            <Image src="/logo_eduboost.png" alt="Logo" width={32} height={32} />
-                            <p className="text-xl font-semibold tracking-tight">Studio</p>
+                        <div className="p-4 flex items-center gap-2">
+                            <Image src="/logo_eduboost.png" alt="Logo" width={32} height={32} className="rounded-lg" />
+                            <p className="text-xl font-bold tracking-tight text-slate-800">
+                                <span className="text-emerald-600">Studio</span>
+                            </p>
                         </div>
                     </Link>
                 </div>

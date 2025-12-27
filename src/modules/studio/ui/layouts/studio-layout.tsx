@@ -9,7 +9,7 @@ export const StudioLayout = ({ children }: StudioLayoutProps) => {
   return (
     <SidebarProvider>
       
-      <div className="w-full bg-gradient-to-br from-slate-50 via-white to-blue-50 min-h-screen">
+      <div className="w-full edu-gradient-subtle min-h-screen">
         <StudioNavbar/>
         <div className="flex min-h-screen py-[4rem]">
             <StudioSidebar />
@@ -22,5 +22,3 @@ export const StudioLayout = ({ children }: StudioLayoutProps) => {
     </SidebarProvider>
   );
 };
-
-

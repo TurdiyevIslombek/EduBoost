@@ -45,12 +45,14 @@ export const studioRouter = createTRPCRouter({
       .select({
         ...getTableColumns(videos),
         viewCount: db.$count(videoViews, eq(videoViews.videoId, videos.id)),
+        viewCountAdded: videos.viewCountOverride,
         commentCount: db.$count(comments, eq(comments.videoId, videos.id)),
         likeCount: db.$count(videoReactions, 
           and(
             eq(videoReactions.videoId, videos.id),
             eq(videoReactions.type, "like")
         )),
+        likeCountAdded: videos.likeCountOverride,
         user: users,
 
 
@@ -75,6 +77,12 @@ export const studioRouter = createTRPCRouter({
     const hasMore = data.length > limit;  
 
     const items = hasMore ? data.slice(0, -1) : data;
+
+    // Apply DB overrides to totals to match other feeds
+    items.forEach((v) => {
+      (v as unknown as { viewCount: number }).viewCount = (v as unknown as { viewCount: number }).viewCount + ((v as unknown as { viewCountAdded?: number }).viewCountAdded ?? 0);
+      (v as unknown as { likeCount: number }).likeCount = (v as unknown as { likeCount: number }).likeCount + ((v as unknown as { likeCountAdded?: number }).likeCountAdded ?? 0);
+    });
 
     const lastItem = items[items.length - 1];
     const nextCursor = hasMore ?
