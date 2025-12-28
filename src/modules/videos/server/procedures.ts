@@ -2,11 +2,16 @@ import { db } from "@/db";
 import { subscriptions, users, videoReactions, videos, videoUpdateSchema, videoViews } from "@/db/schema";
 import { baseProcedure, createTRPCRouter, protectedProcedure } from "@/trpc/init";
 import { mux } from "@/lib/mux";
+import { redis } from "@/lib/redis";
 import { and, desc, eq, getTableColumns, inArray, isNotNull, lt, or, sql } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import {z} from "zod";
 import { UTApi } from "uploadthing/server";
 import { workflow } from "@/lib/workflow";
+
+const TRENDING_CACHE_PREFIX = "videos:trending:v1";
+const HOME_CACHE_PREFIX = "videos:home:v1";
+const CACHE_TTL_SECONDS = 60; // 1 minute for video lists
 
 export const videosRouter = createTRPCRouter({
 
@@ -23,6 +28,16 @@ export const videosRouter = createTRPCRouter({
         )
         .query(async ({ input}) => {
           const {cursor, limit} = input;
+
+          // Cache only the first page (no cursor)
+          const cacheKey = !cursor ? `${TRENDING_CACHE_PREFIX}:first:limit:${limit}` : null;
+          
+          if (cacheKey) {
+            const cached = await redis.get(cacheKey);
+            if (cached) {
+              return cached as { items: typeof data; nextCursor: typeof nextCursor };
+            }
+          }
 
             const viewCountSubquery = db.$count(
             videoViews,
@@ -84,7 +99,15 @@ export const videosRouter = createTRPCRouter({
             viewCount: lastItem.viewCount,
           }
           : null;
-          return { items, nextCursor };
+          
+          const result = { items, nextCursor };
+          
+          // Cache the first page
+          if (cacheKey) {
+            await redis.set(cacheKey, result, { ex: CACHE_TTL_SECONDS });
+          }
+          
+          return result;
     }),
 
 // 
@@ -186,6 +209,18 @@ export const videosRouter = createTRPCRouter({
         )
         .query(async ({ input}) => {
           const {cursor, limit, categoryId, userId} = input;
+          
+          // Cache only first page without user filter (public browse)
+          const cacheKey = !cursor && !userId 
+            ? `${HOME_CACHE_PREFIX}:first:cat:${categoryId || 'all'}:limit:${limit}` 
+            : null;
+          
+          if (cacheKey) {
+            const cached = await redis.get(cacheKey);
+            if (cached) {
+              return cached as { items: typeof data; nextCursor: typeof nextCursor };
+            }
+          }
     
           const data = await db
             .select(
@@ -242,7 +277,15 @@ export const videosRouter = createTRPCRouter({
             updatedAt: lastItem.updatedAt,
           }
           : null;
-          return { items, nextCursor };
+          
+          const result = { items, nextCursor };
+          
+          // Cache the first page
+          if (cacheKey) {
+            await redis.set(cacheKey, result, { ex: CACHE_TTL_SECONDS });
+          }
+          
+          return result;
     }),
  
      getOne: baseProcedure

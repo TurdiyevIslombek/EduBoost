@@ -8,7 +8,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "db:ensure-schema": "tsx src/scripts/ensure-schema.ts",
+    "db:seed-categories": "tsx src/scripts/seed-categories.ts"
   },
   "dependencies": {
     "@clerk/nextjs": "6.10.3",

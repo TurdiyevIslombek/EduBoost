@@ -1,14 +1,12 @@
-"use client";
-
 import { LandingHero } from "../components/landing-hero";
 import { LandingFeatures } from "../components/landing-features";
 import { LandingNavbar } from "../components/landing-navbar";
 import { LandingFooter } from "../components/landing-footer";
-import { AuthRedirect } from "@/components/auth-redirect";
+import { AuthRedirectShell } from "@/components/auth-redirect-shell";
 
 export const LandingView = () => {
   return (
-    <AuthRedirect>
+    <AuthRedirectShell>
       <div className="min-h-screen bg-white overflow-hidden">
         {/* Animated background */}
         <div className="fixed inset-0 -z-10">
@@ -23,6 +21,6 @@ export const LandingView = () => {
         <LandingFeatures />
         <LandingFooter />
       </div>
-    </AuthRedirect>
+    </AuthRedirectShell>
   );
 };
