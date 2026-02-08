@@ -7,17 +7,31 @@ const isProtectedRoute = createRouteMatcher([
   "/feed/subscribed",
   "/playlists(.*)",
   "/account(.*)",
+  "/admin(.*)",
+]);
+
+const isPublicRoute = createRouteMatcher([
+  "/",
+  "/about(.*)",
+  "/contact(.*)",
+  "/sign-in(.*)",
+  "/sign-up(.*)",
+  "/videos(.*)",
+  "/users(.*)",
+  "/search(.*)",
+  "/feed/trending",
+  "/robots.txt",
+  "/sitemap.xml",
 ]);
 
 export default clerkMiddleware(async (auth, req) => {
+  if (isPublicRoute(req)) return;
   if (isProtectedRoute(req)) await auth.protect();
 });
 
 export const config = {
   matcher: [
-    // Skip Next.js internals and all static files, unless found in search params
-    '/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)',
-    // Always run for API routes
+    '/((?!_next|robots\\.txt|sitemap\\.xml|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)',
     '/(api|trpc)(.*)',
   ],
 };

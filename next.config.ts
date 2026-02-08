@@ -33,9 +33,6 @@ const nextConfig: NextConfig = {
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
   },
 
-  // Production deployment: standalone output for Node environments
-  output: 'standalone',
-
   // 👇 Add this to silence the multiple lockfile warning
   outputFileTracingRoot: __dirname,
 };

@@ -1,7 +1,7 @@
 {
   "headers": [
     {
-      "source": "/((?!api|studio).*)",
+      "source": "/((?!api|studio|home|account|playlists|subscriptions|feed/subscribed|admin).*)",
       "headers": [
         {
           "key": "X-Robots-Tag",
@@ -26,6 +26,68 @@
           "value": "noindex, nofollow"
         }
       ]
+    },
+    {
+      "source": "/home(.*)",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        }
+      ]
+    },
+    {
+      "source": "/account(.*)",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        }
+      ]
+    },
+    {
+      "source": "/playlists(.*)",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        }
+      ]
+    },
+    {
+      "source": "/subscriptions",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        }
+      ]
+    },
+    {
+      "source": "/feed/subscribed",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        }
+      ]
+    },
+    {
+      "source": "/admin(.*)",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        }
+      ]
+    }
+  ],
+  "redirects": [
+    {
+      "source": "/(.*)",
+      "has": [{ "type": "host", "value": "eduboostonline.com" }],
+      "destination": "https://www.eduboostonline.com/$1",
+      "permanent": true
     }
   ]
 }
