@@ -1,4 +1,4 @@
-import { createTRPCRouter, protectedProcedure } from "@/trpc/init";
+import { createTRPCRouter, baseProcedure, protectedProcedure } from "@/trpc/init";
 import { db } from "@/db";
 import { videos, users, categories, videoViews, videoReactions, subscriptions, scheduledMetrics } from "@/db/schema";
 import { count, desc, eq, sql, gte, inArray } from "drizzle-orm";
@@ -7,6 +7,7 @@ import { clerkClient } from "@clerk/nextjs/server";
 import { z } from "zod";
 import { mux } from "@/lib/mux";
 import { UTApi } from "uploadthing/server";
+import { redis } from "@/lib/redis";
 
 const requireAdmin = protectedProcedure.use(async ({ ctx, next }) => {
   // Get the full Clerk user data to check email
@@ -178,7 +179,7 @@ export const adminRouter = createTRPCRouter({
           videos.viewCountOverride,
           videos.likeCountOverride
         )
-        .orderBy(desc(videos.createdAt));
+        .orderBy(videos.createdAt);
 
       return videosWithCounts;
     } catch (error) {
@@ -387,6 +388,23 @@ export const adminRouter = createTRPCRouter({
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: `Failed to delete user: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        });
+      }
+    }),
+
+  setAllVideosVisibility: requireAdmin
+    .input(z.object({
+      visibility: z.enum(["public", "private"]),
+    }))
+    .mutation(async ({ input }) => {
+      try {
+        await db.update(videos).set({ visibility: input.visibility, updatedAt: new Date() });
+        return { success: true };
+      } catch (error) {
+        console.error("Set all videos visibility error:", error);
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: `Failed to update visibility: ${error instanceof Error ? error.message : 'Unknown error'}`,
         });
       }
     }),
@@ -934,5 +952,21 @@ export const adminRouter = createTRPCRouter({
           message: "Failed to get views over time",
         });
       }
+    }),
+
+  // Maintenance Banner (public read, admin write)
+  getMaintenanceBanner: baseProcedure.query(async () => {
+    const data = await redis.get<{ enabled: boolean; message: string }>("maintenanceBanner");
+    return data ?? { enabled: false, message: "" };
+  }),
+
+  setMaintenanceBanner: requireAdmin
+    .input(z.object({
+      enabled: z.boolean(),
+      message: z.string().max(500),
+    }))
+    .mutation(async ({ input }) => {
+      await redis.set("maintenanceBanner", { enabled: input.enabled, message: input.message });
+      return { success: true };
     }),
 });

@@ -6,12 +6,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
+import { Textarea } from "@/components/ui/textarea";
 import { 
   SettingsIcon, 
   ShieldIcon,
   BellIcon,
-  ServerIcon
+  ServerIcon,
+  AlertTriangleIcon
 } from "lucide-react";
+import { trpc } from "@/trpc/client";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -20,6 +23,25 @@ export const AdminSettingsView = () => {
   const [notifNewUser, setNotifNewUser] = useState(true);
   const [notifUpload, setNotifUpload] = useState(true);
   const [notifSystem, setNotifSystem] = useState(true);
+
+  // Maintenance banner (stored in Redis via tRPC)
+  const [bannerEnabled, setBannerEnabled] = useState(false);
+  const [bannerMessage, setBannerMessage] = useState("");
+  const bannerQuery = trpc.admin.getMaintenanceBanner.useQuery();
+  const bannerMutation = trpc.admin.setMaintenanceBanner.useMutation({
+    onSuccess: () => {
+      toast.success("Maintenance banner settings saved");
+      bannerQuery.refetch();
+    },
+    onError: (err) => toast.error(err.message),
+  });
+
+  useEffect(() => {
+    if (bannerQuery.data) {
+      setBannerEnabled(bannerQuery.data.enabled);
+      setBannerMessage(bannerQuery.data.message);
+    }
+  }, [bannerQuery.data]);
 
   useEffect(() => {
     // Hydrate from localStorage
@@ -37,6 +59,10 @@ export const AdminSettingsView = () => {
     toast.success("Notification settings saved");
   };
 
+  const saveBannerSettings = () => {
+    bannerMutation.mutate({ enabled: bannerEnabled, message: bannerMessage });
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -48,6 +74,49 @@ export const AdminSettingsView = () => {
           Configure platform settings and preferences
         </p>
       </div>
+
+      {/* Maintenance Banner */}
+      <Card className="bg-white/70 backdrop-blur-sm border-white/40 shadow-lg">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <AlertTriangleIcon className="size-5" />
+            Maintenance Banner
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              <Label>Enable Banner</Label>
+              <p className="text-sm text-gray-500">Show a maintenance message on the home page</p>
+            </div>
+            <Switch checked={bannerEnabled} onCheckedChange={setBannerEnabled} />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="banner-message">Banner Message</Label>
+            <Textarea
+              id="banner-message"
+              value={bannerMessage}
+              onChange={(e) => setBannerMessage(e.target.value)}
+              placeholder="We're working to improve the experience. Videos will return soon."
+              rows={3}
+            />
+          </div>
+
+          {bannerEnabled && bannerMessage && (
+            <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
+              <p className="text-sm font-medium text-amber-800">Preview:</p>
+              <p className="text-sm text-amber-700 mt-1">{bannerMessage}</p>
+            </div>
+          )}
+
+          <div className="flex justify-end">
+            <Button className="bg-gradient-to-r from-amber-500 to-orange-600" onClick={saveBannerSettings}>
+              Save Banner Settings
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* General Settings */}
       <Card className="bg-white/70 backdrop-blur-sm border-white/40 shadow-lg">

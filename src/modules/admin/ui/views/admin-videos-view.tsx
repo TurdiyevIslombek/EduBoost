@@ -23,6 +23,7 @@ import {
 import {
   VideoIcon,
   EyeIcon,
+  EyeOffIcon,
   TrashIcon,
   EditIcon,
   PlayIcon,
@@ -107,6 +108,15 @@ export const AdminVideosView = () => {
       }
     }
   };
+
+  const setAllVisibilityMutation = trpc.admin.setAllVideosVisibility.useMutation({
+    onSuccess: (_, { visibility }) => {
+      toast.success(`All videos set to ${visibility}`);
+      utils.admin.getAllVideos.invalidate();
+      utils.admin.getVideoStats.invalidate();
+    },
+    onError: (error) => toast.error(error.message),
+  });
 
   const triggerSchedulerMutation = trpc.admin.triggerScheduler.useMutation({
     onSuccess: (data) => {
@@ -211,7 +221,33 @@ export const AdminVideosView = () => {
           </h1>
           <p className="text-gray-600 mt-2">Manage all videos on the platform</p>
         </div>
-        <div className="flex gap-2 items-center">
+        <div className="flex gap-2 items-center flex-wrap">
+          <Button
+            onClick={() => {
+              if (confirm("Make ALL videos public?")) {
+                setAllVisibilityMutation.mutate({ visibility: "public" });
+              }
+            }}
+            disabled={setAllVisibilityMutation.isPending}
+            variant="outline"
+            className="border-green-500 text-green-600 hover:bg-green-50"
+          >
+            <EyeIcon className="size-4 mr-2" />
+            All Public
+          </Button>
+          <Button
+            onClick={() => {
+              if (confirm("Make ALL videos private?")) {
+                setAllVisibilityMutation.mutate({ visibility: "private" });
+              }
+            }}
+            disabled={setAllVisibilityMutation.isPending}
+            variant="outline"
+            className="border-gray-500 text-gray-600 hover:bg-gray-50"
+          >
+            <EyeOffIcon className="size-4 mr-2" />
+            All Private
+          </Button>
           <Button
             onClick={() => setManageSchedulesOpen(true)}
             variant="outline"
@@ -319,8 +355,8 @@ export const AdminVideosView = () => {
         <CardContent>
           <div className="space-y-4">
             {/* Table Header */}
-            <div className="grid grid-cols-12 gap-4 p-4 bg-gray-50/80 rounded-lg font-medium text-sm text-gray-700">
-              <div className="col-span-1 flex items-center">
+            <div className="grid grid-cols-[1.25rem_2rem_minmax(0,1fr)_150px_80px_160px_120px] gap-4 p-4 bg-gray-50/80 rounded-lg font-medium text-sm text-gray-700">
+              <div className="flex items-center">
                 <input
                   type="checkbox"
                   checked={selectedVideos.length === videos?.length && videos.length > 0}
@@ -328,11 +364,12 @@ export const AdminVideosView = () => {
                   className="w-4 h-4 cursor-pointer"
                 />
               </div>
-              <div className="col-span-3">Video</div>
-              <div className="col-span-2">Creator</div>
-              <div className="col-span-2">Status</div>
-              <div className="col-span-2">Views</div>
-              <div className="col-span-2">Actions</div>
+              <div className="flex items-center">#</div>
+              <div>Video</div>
+              <div>Creator</div>
+              <div>Status</div>
+              <div>Views</div>
+              <div>Actions</div>
             </div>
 
             {/* Video Rows */}
@@ -348,10 +385,11 @@ export const AdminVideosView = () => {
                 <p className="text-sm text-gray-500">{error.message}</p>
               </div>
             ) : videos && videos.length > 0 ? (
-              videos.map((video) => (
+              videos.map((video, index) => (
                 <VideoRow 
                   key={video.id} 
-                  video={video} 
+                  video={video}
+                  index={index + 1}
                   isSelected={selectedVideos.includes(video.id)}
                   onToggleSelect={toggleVideoSelection}
                 />
@@ -567,11 +605,12 @@ interface VideoRowProps {
     likeCountReal?: number;
     likeCountAdded?: number;
   };
+  index: number;
   isSelected: boolean;
   onToggleSelect: (videoId: string) => void;
 }
 
-const VideoRow = ({ video, isSelected, onToggleSelect }: VideoRowProps) => {
+const VideoRow = ({ video, index, isSelected, onToggleSelect }: VideoRowProps) => {
   const utils = trpc.useContext();
   const [open, setOpen] = useState(false);
   const [scheduleMode, setScheduleMode] = useState(false);
@@ -711,8 +750,8 @@ const VideoRow = ({ video, isSelected, onToggleSelect }: VideoRowProps) => {
 
 
   return (
-    <div className="grid grid-cols-12 gap-4 p-4 border border-gray-200 rounded-lg hover:bg-gray-50/50 transition-colors">
-      <div className="col-span-1 flex items-center justify-center">
+    <div className="grid grid-cols-[1.25rem_2rem_minmax(0,1fr)_150px_80px_160px_120px] gap-4 p-4 border border-gray-200 rounded-lg hover:bg-gray-50/50 transition-colors">
+      <div className="flex items-center justify-center">
         <input
           type="checkbox"
           checked={isSelected}
@@ -720,7 +759,10 @@ const VideoRow = ({ video, isSelected, onToggleSelect }: VideoRowProps) => {
           className="w-4 h-4 cursor-pointer"
         />
       </div>
-      <div className="col-span-3 flex items-center gap-3">
+      <div className="flex items-center justify-center">
+        <span className="text-sm font-medium text-gray-500">{index}</span>
+      </div>
+      <div className="flex items-center gap-3">
         <Image
           unoptimized
           src={video.thumbnailUrl || "/placeholder.svg"}
@@ -737,10 +779,10 @@ const VideoRow = ({ video, isSelected, onToggleSelect }: VideoRowProps) => {
           <p className="text-xs text-gray-500">{formatDuration(video.duration)} • {video.category?.name || "No category"}</p>
         </div>
       </div>
-      <div className="col-span-2 flex items-center">
+      <div className="flex items-center">
         <p className="text-sm">{video.user?.name || "Unknown"}</p>
       </div>
-      <div className="col-span-2 flex items-center">
+      <div className="flex items-center">
         <Button
           size="sm"
           variant="ghost"
@@ -755,13 +797,13 @@ const VideoRow = ({ video, isSelected, onToggleSelect }: VideoRowProps) => {
           )}
         </Button>
       </div>
-      <div className="col-span-2 flex items-center">
+      <div className="flex items-center">
         <p className="text-sm font-medium">
           {video.viewCountReal + video.viewCountAdded}
           <span className="text-xs text-gray-500 ml-2">({video.viewCountReal} + {video.viewCountAdded})</span>
         </p>
       </div>
-      <div className="col-span-2 flex items-center gap-2">
+      <div className="flex items-center gap-1 whitespace-nowrap">
         <Button size="sm" variant="ghost" className="hover:bg-blue-100" title="Quick Edit" onClick={() => setOpen(true)}>
           <EditIcon className="size-4" />
         </Button>
