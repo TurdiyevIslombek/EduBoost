@@ -95,8 +95,8 @@ export const AdminVideosView = () => {
             { onSuccess: () => {} } 
           );
           successCount++;
-        } catch (e) {
-          console.error(e);
+        } catch {
+          // Individual deletion failed, continuing batch
         }
       }));
       
@@ -743,8 +743,8 @@ const VideoRow = ({ video, index, isSelected, onToggleSelect }: VideoRowProps) =
           setOpen(false);
         }
       }
-    } catch (error) {
-      console.error("Save error:", error);
+    } catch {
+      // Save error handled by mutation callbacks
     }
   };
 

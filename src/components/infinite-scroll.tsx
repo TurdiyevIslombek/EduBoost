@@ -30,13 +30,14 @@ export const InfiniteScroll = ({
     }, [hasNextPage, isFetchingNextPage, fetchNextPage, isManual, isIntersecting]);
 
     return (
-        <div className="flex flex-col items-center gap-4 p-4">
+        <div className="flex flex-col items-center gap-4 p-4" role="status" aria-live="polite">
             <div ref={targetRef} className="h-1"/>
             {hasNextPage ? (
-                <Button 
+                <Button
                 variant="secondary"
                 disabled={!hasNextPage || isFetchingNextPage}
                 onClick={() => fetchNextPage()}
+                aria-label={isFetchingNextPage ? "Loading more content" : "Load more content"}
                 >
                     {isFetchingNextPage ? "Loading..." : "Load More"}
                 </Button>

@@ -44,16 +44,15 @@ export const SearchInputSuspense = () => {
 
 
     return(
-        <form className="flex w-full max-w-[600px] shadow-lg rounded-xl overflow-hidden border border-slate-200/60" onSubmit={handleSearch}>
-            {/* Search input */}
+        <form className="flex w-full max-w-[600px] shadow-lg rounded-xl overflow-hidden border border-slate-200/60" role="search" onSubmit={handleSearch}>
             <div className="relative w-full">
-                <input 
+                <input
                 value={value}
                 onChange={(e) => setValue(e.target.value)}
                 type="text"
                 placeholder="Search courses..."
+                aria-label="Search courses"
                 className="w-full p-4 py-3 pr-12 bg-white border-0 focus:outline-none focus:ring-2 focus:ring-emerald-400 placeholder-slate-400 font-medium text-slate-700"
-                
                 />
                 {value && (
                     <Button
@@ -61,6 +60,7 @@ export const SearchInputSuspense = () => {
                         variant="ghost"
                         size="icon"
                         onClick={() => setValue("")}
+                        aria-label="Clear search"
                         className="absolute top-1/2 right-2 -translate-y-1/2 rounded-full hover:bg-slate-100"
                     >
                         <XIcon className="text-slate-500"/>
@@ -68,18 +68,14 @@ export const SearchInputSuspense = () => {
                 )}
             </div>
 
-            {/* Button */}
-
             <button
                 disabled={!value.trim()}
                 type="submit"
+                aria-label="Submit search"
                 className="px-5 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 text-white hover:from-emerald-700 hover:to-teal-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 font-semibold"
             >
                 <SearchIcon className="size-5"/>
-
             </button>
-
-
         </form>
     )
 }

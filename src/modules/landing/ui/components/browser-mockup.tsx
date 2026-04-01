@@ -7,7 +7,7 @@ export const BrowserMockup = () => {
     <div className="w-full max-w-5xl mx-auto px-4">
       <div className="relative">
         {/* Browser Frame */}
-        <div className="bg-white border border-slate-200 rounded-xl shadow-2xl shadow-slate-300/50 overflow-hidden">
+        <div className="bg-white border border-slate-200 rounded-xl shadow-2xl shadow-slate-300/50 overflow-hidden animate-depth-pulse">
           {/* Browser Header */}
           <div className="bg-slate-100 border-b border-slate-200 px-4 py-3 flex items-center gap-3">
             {/* Traffic Lights */}

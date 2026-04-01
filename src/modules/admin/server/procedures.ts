@@ -10,15 +10,21 @@ import { UTApi } from "uploadthing/server";
 import { redis } from "@/lib/redis";
 
 const requireAdmin = protectedProcedure.use(async ({ ctx, next }) => {
-  // Get the full Clerk user data to check email
   const clerk = await clerkClient();
   const clerkUser = await clerk.users.getUser(ctx.user.clerkId);
   const userEmail = clerkUser.emailAddresses?.[0]?.emailAddress?.toLowerCase();
-  const allowed = (process.env.ADMIN_EMAILS || "turdiyevislombek01@gmail.com")
+  const adminEmails = process.env.ADMIN_EMAILS;
+  if (!adminEmails) {
+    throw new TRPCError({
+      code: "INTERNAL_SERVER_ERROR",
+      message: "ADMIN_EMAILS environment variable is not configured",
+    });
+  }
+  const allowed = adminEmails
     .split(",")
     .map((e) => e.trim().toLowerCase())
     .filter(Boolean);
-  
+
   if (!userEmail || !allowed.includes(userEmail)) {
     throw new TRPCError({
       code: "FORBIDDEN",
@@ -37,20 +43,16 @@ const requireAdmin = protectedProcedure.use(async ({ ctx, next }) => {
 import { processScheduledMetrics } from "@/lib/metrics-scheduler";
 import { workflow } from "@/lib/workflow";
 
-// ... existing imports
-
 export const adminRouter = createTRPCRouter({
   triggerScheduler: requireAdmin.mutation(async () => {
     try {
-      console.log("Admin manually triggered scheduler");
       const result = await processScheduledMetrics();
-      return { 
-        success: true, 
+      return {
+        success: true,
         processed: result.processed,
         message: `Processed ${result.processed} schedules. Added ${result.viewsAdded} views and ${result.likesAdded} likes.`
       };
     } catch (error) {
-      console.error("Manual scheduler error:", error);
       throw new TRPCError({
         code: "INTERNAL_SERVER_ERROR",
         message: `Failed to run scheduler: ${error instanceof Error ? error.message : 'Unknown error'}`,
@@ -60,7 +62,6 @@ export const adminRouter = createTRPCRouter({
 
   getStats: requireAdmin.query(async () => {
     try {
-      console.log("Admin getStats: Starting query...");
       const [
         totalVideos,
         totalUsers,
@@ -79,13 +80,6 @@ export const adminRouter = createTRPCRouter({
         ),
       ]);
 
-      console.log("Admin getStats: Queries completed", {
-        totalVideos: totalVideos[0]?.count,
-        totalUsers: totalUsers[0]?.count,
-        totalCategories: totalCategories[0]?.count,
-        totalViews: totalViews[0]?.count
-      });
-
       return {
         totalVideos: totalVideos[0]?.count || 0,
         totalUsers: totalUsers[0]?.count || 0,
@@ -94,8 +88,7 @@ export const adminRouter = createTRPCRouter({
         publicVideos: publicVideos[0]?.count || 0,
         recentUsers: recentUsers[0]?.count || 0,
       };
-    } catch (error) {
-      console.error("Admin getStats error:", error);
+    } catch {
       throw new TRPCError({
         code: "INTERNAL_SERVER_ERROR",
         message: "Failed to get stats",
@@ -182,8 +175,7 @@ export const adminRouter = createTRPCRouter({
         .orderBy(videos.createdAt);
 
       return videosWithCounts;
-    } catch (error) {
-      console.error("Get all videos error:", error);
+    } catch {
       throw new TRPCError({
         code: "INTERNAL_SERVER_ERROR",
         message: "Failed to get videos",
@@ -208,8 +200,7 @@ export const adminRouter = createTRPCRouter({
         totalViews: totalViews[0]?.count || 0,
         thisMonth: thisMonth[0]?.count || 0,
       };
-    } catch (error) {
-      console.error("Get video stats error:", error);
+    } catch {
       throw new TRPCError({
         code: "INTERNAL_SERVER_ERROR",
         message: "Failed to get video stats",
@@ -238,8 +229,7 @@ export const adminRouter = createTRPCRouter({
         .orderBy(desc(users.createdAt));
 
       return usersWithCounts;
-    } catch (error) {
-      console.error("Get all users error:", error);
+    } catch {
       throw new TRPCError({
         code: "INTERNAL_SERVER_ERROR",
         message: "Failed to get users",
@@ -253,7 +243,6 @@ export const adminRouter = createTRPCRouter({
         totalUsers,
         newThisWeek,
         contentCreators,
-        // Note: We don't have banned users table, so we'll use 0
       ] = await Promise.all([
         db.select({ count: count() }).from(users),
         db.select({ count: count() }).from(users).where(
@@ -270,10 +259,9 @@ export const adminRouter = createTRPCRouter({
         totalUsers: totalUsers[0]?.count || 0,
         newThisWeek: newThisWeek[0]?.count || 0,
         contentCreators: contentCreators.count || 0,
-        bannedUsers: 0, // We don't have banned users functionality yet
+        bannedUsers: 0,
       };
-    } catch (error) {
-      console.error("Get user stats error:", error);
+    } catch {
       throw new TRPCError({
         code: "INTERNAL_SERVER_ERROR",
         message: "Failed to get user stats",
@@ -285,14 +273,11 @@ export const adminRouter = createTRPCRouter({
     .input(z.object({ id: z.string() }))
     .mutation(async ({ input }) => {
       try {
-        console.log("Admin deleteVideo: Starting deletion for:", input.id);
-        
-        // First, get the video to access external resource IDs
         const [existingVideo] = await db
           .select()
           .from(videos)
           .where(eq(videos.id, input.id));
-          
+
         if (!existingVideo) {
           throw new TRPCError({
             code: "NOT_FOUND",
@@ -300,48 +285,28 @@ export const adminRouter = createTRPCRouter({
           });
         }
 
-        // Clean up external resources in parallel
         const cleanupPromises = [];
 
-        // 1. Delete Mux asset if it exists
         if (existingVideo.muxAssetId) {
-          console.log("Deleting Mux asset:", existingVideo.muxAssetId);
           cleanupPromises.push(
-            mux.video.assets.delete(existingVideo.muxAssetId)
-              .catch(error => {
-                console.error("Failed to delete Mux asset:", error);
-                // Don't throw - continue with cleanup
-              })
+            mux.video.assets.delete(existingVideo.muxAssetId).catch(() => {})
           );
         }
 
-        // 2. Delete UploadThing thumbnail if it exists
         if (existingVideo.thumbnailKey) {
-          console.log("Deleting UploadThing thumbnail:", existingVideo.thumbnailKey);
           const utapi = new UTApi();
           cleanupPromises.push(
-            utapi.deleteFiles([existingVideo.thumbnailKey])
-              .catch(error => {
-                console.error("Failed to delete UploadThing thumbnail:", error);
-                // Don't throw - continue with cleanup
-              })
+            utapi.deleteFiles([existingVideo.thumbnailKey]).catch(() => {})
           );
         }
 
-        // Wait for external cleanups to complete
         await Promise.allSettled(cleanupPromises);
-        
-        // Delete related records first (due to foreign key constraints)
+
         await db.delete(videoViews).where(eq(videoViews.videoId, input.id));
-        console.log("Deleted video views");
-        
-        // Then delete the video
         await db.delete(videos).where(eq(videos.id, input.id));
-        console.log("Deleted video and cleaned up external resources:", existingVideo.title);
-        
+
         return { success: true };
       } catch (error) {
-        console.error("Delete video error:", error);
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: `Failed to delete video: ${error instanceof Error ? error.message : 'Unknown error'}`,
@@ -353,14 +318,11 @@ export const adminRouter = createTRPCRouter({
     .input(z.object({ id: z.string() }))
     .mutation(async ({ input }) => {
       try {
-        console.log("Admin deleteUser: Starting deletion for:", input.id);
-        
-        // First get user data including clerkId
         const [userData] = await db.select({
           clerkId: users.clerkId,
           name: users.name
         }).from(users).where(eq(users.id, input.id)).limit(1);
-        
+
         if (!userData) {
           throw new TRPCError({
             code: "NOT_FOUND",
@@ -368,23 +330,17 @@ export const adminRouter = createTRPCRouter({
           });
         }
 
-        // Delete from Clerk first
         try {
           const clerk = await clerkClient();
           await clerk.users.deleteUser(userData.clerkId);
-          console.log("Deleted user from Clerk:", userData.clerkId);
-        } catch (clerkError) {
-          console.error("Failed to delete from Clerk:", clerkError);
-          // Continue with database deletion even if Clerk deletion fails
+        } catch {
+          // Clerk deletion failed, continuing with database cleanup
         }
-        
-        // Delete user from our database (this will cascade to related records)
-        const result = await db.delete(users).where(eq(users.id, input.id));
-        console.log("Deleted user from database, result:", result);
-        
+
+        await db.delete(users).where(eq(users.id, input.id));
+
         return { success: true };
       } catch (error) {
-        console.error("Delete user error:", error);
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: `Failed to delete user: ${error instanceof Error ? error.message : 'Unknown error'}`,
@@ -401,7 +357,6 @@ export const adminRouter = createTRPCRouter({
         await db.update(videos).set({ visibility: input.visibility, updatedAt: new Date() });
         return { success: true };
       } catch (error) {
-        console.error("Set all videos visibility error:", error);
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: `Failed to update visibility: ${error instanceof Error ? error.message : 'Unknown error'}`,
@@ -410,21 +365,18 @@ export const adminRouter = createTRPCRouter({
     }),
 
   toggleVideoVisibility: requireAdmin
-    .input(z.object({ 
+    .input(z.object({
       id: z.string(),
       visibility: z.enum(["public", "private"])
     }))
     .mutation(async ({ input }) => {
       try {
-        console.log("Admin toggleVideoVisibility: Updating video", input.id, "to", input.visibility);
-        const result = await db
+        await db
           .update(videos)
           .set({ visibility: input.visibility })
           .where(eq(videos.id, input.id));
-        console.log("Video visibility updated, result:", result);
         return { success: true };
       } catch (error) {
-        console.error("Toggle video visibility error:", error);
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: `Failed to update video visibility: ${error instanceof Error ? error.message : 'Unknown error'}`,
@@ -445,7 +397,6 @@ export const adminRouter = createTRPCRouter({
     .mutation(async ({ input }) => {
       try {
         const { id, ...data } = input;
-        // Remove undefined keys
         const updateDataEntries = Object.entries(data).filter(([, v]) => v !== undefined) as [string, unknown][];
         const updateData = Object.fromEntries(updateDataEntries) as Partial<typeof videos.$inferInsert>;
         if (Object.keys(updateData).length === 0) {
@@ -457,7 +408,6 @@ export const adminRouter = createTRPCRouter({
         }).where(eq(videos.id, id));
         return { success: true };
       } catch (error) {
-        console.error("Admin updateVideo error:", error);
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: `Failed to update video: ${error instanceof Error ? error.message : 'Unknown error'}`,
@@ -485,7 +435,6 @@ export const adminRouter = createTRPCRouter({
         }
         return { success: true };
       } catch (error) {
-        console.error("Admin updateVideoMetrics error:", error);
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: `Failed to update video metrics: ${error instanceof Error ? error.message : 'Unknown error'}`,
@@ -503,14 +452,12 @@ export const adminRouter = createTRPCRouter({
         await db.update(users).set({ subscriberCountOverride: input.subscribers }).where(eq(users.id, input.userId));
         return { success: true };
       } catch (error) {
-        console.error("Admin updateUserSubscribers error:", error);
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: `Failed to update subscribers: ${error instanceof Error ? error.message : 'Unknown error'}`,
         });
       }
     }),
-
 
   scheduleMetrics: requireAdmin
     .input(z.object({
@@ -523,7 +470,6 @@ export const adminRouter = createTRPCRouter({
       try {
         const startDate = new Date();
         const endDate = new Date();
-        // Handle fractional days (e.g. 0.1 days)
         endDate.setTime(endDate.getTime() + (input.durationDays * 24 * 60 * 60 * 1000));
 
         const [schedule] = await db.insert(scheduledMetrics).values({
@@ -537,39 +483,31 @@ export const adminRouter = createTRPCRouter({
           isActive: true,
         }).returning();
 
-        // Trigger Upstash Workflow
         try {
-            // Determine interval based on duration to get smooth updates
-            // Short duration (< 1 day) -> 15 mins
-            // Medium duration (1-3 days) -> 30 mins
-            // Long duration (> 3 days) -> 60 mins
             let intervalMinutes = 60;
             if (input.durationDays < 1) intervalMinutes = 15;
             else if (input.durationDays <= 3) intervalMinutes = 30;
 
             await workflow.trigger({
                 url: `${process.env.UPSTASH_WORKFLOW_URL || process.env.NEXT_PUBLIC_APP_URL || "https://edu-boost.vercel.app"}/api/workflows/distribute-metrics`,
-                body: { 
+                body: {
                     scheduleId: schedule.id,
                     intervalMinutes
                 },
                 retries: 3
             });
-            console.log("Triggered workflow for schedule:", schedule.id);
-        } catch (wfError) {
-            console.error("Failed to trigger workflow (fallback to cron will happen if set up):", wfError);
+        } catch {
+            // Workflow trigger failed, cron fallback will handle it
         }
 
         return { success: true, message: `Scheduled ${input.targetViews} views and ${input.targetLikes} likes over ${input.durationDays} days` };
       } catch (error) {
-        console.error("Admin scheduleMetrics error:", error);
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: `Failed to schedule metrics: ${error instanceof Error ? error.message : 'Unknown error'}`,
         });
       }
     }),
-
 
   getScheduledMetrics: requireAdmin
     .input(z.object({
@@ -585,7 +523,6 @@ export const adminRouter = createTRPCRouter({
 
         return scheduled;
       } catch (error) {
-        console.error("Admin getScheduledMetrics error:", error);
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: `Failed to get scheduled metrics: ${error instanceof Error ? error.message : 'Unknown error'}`,
@@ -617,8 +554,7 @@ export const adminRouter = createTRPCRouter({
         .orderBy(desc(scheduledMetrics.createdAt));
 
       return scheduled;
-    } catch (error) {
-      console.error("Admin getAllScheduledMetrics error:", error);
+    } catch {
       throw new TRPCError({
         code: "INTERNAL_SERVER_ERROR",
         message: "Failed to get all scheduled metrics",
@@ -638,7 +574,6 @@ export const adminRouter = createTRPCRouter({
 
         return { success: true, message: "Schedule deleted successfully" };
       } catch (error) {
-        console.error("Admin deleteScheduledMetric error:", error);
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: `Failed to delete schedule: ${error instanceof Error ? error.message : 'Unknown error'}`,
@@ -657,7 +592,6 @@ export const adminRouter = createTRPCRouter({
       try {
         const startDate = new Date();
         const endDate = new Date();
-        // Handle fractional days
         endDate.setTime(endDate.getTime() + (input.durationDays * 24 * 60 * 60 * 1000));
 
         const values = input.videoIds.map(videoId => ({
@@ -673,35 +607,29 @@ export const adminRouter = createTRPCRouter({
 
         const insertedSchedules = await db.insert(scheduledMetrics).values(values).returning();
 
-        // Trigger Upstash Workflow for EACH schedule
-        // (Batching is better, but workflow expects single ID for now. We can improve later)
         try {
           const intervalMinutes = input.durationDays < 1 ? 15 : (input.durationDays <= 3 ? 30 : 60);
           const baseUrl = process.env.UPSTASH_WORKFLOW_URL || process.env.NEXT_PUBLIC_APP_URL || "https://edu-boost.vercel.app";
-          
-          // Trigger in parallel
-          await Promise.allSettled(insertedSchedules.map(schedule => 
+
+          await Promise.allSettled(insertedSchedules.map(schedule =>
              workflow.trigger({
                 url: `${baseUrl}/api/workflows/distribute-metrics`,
-                body: { 
+                body: {
                     scheduleId: schedule.id,
                     intervalMinutes
                 },
                 retries: 3
             })
           ));
-          
-          console.log(`Triggered ${insertedSchedules.length} workflows for bulk schedule`);
-        } catch (wfError) {
-          console.error("Failed to trigger workflows (fallback to cron will happen if set up):", wfError);
+        } catch {
+          // Workflow triggers failed, cron fallback will handle it
         }
 
-        return { 
-          success: true, 
-          message: `Scheduled ${input.targetViews} views and ${input.targetLikes} likes for ${input.videoIds.length} video(s) over ${input.durationDays} days` 
+        return {
+          success: true,
+          message: `Scheduled ${input.targetViews} views and ${input.targetLikes} likes for ${input.videoIds.length} video(s) over ${input.durationDays} days`
         };
       } catch (error) {
-        console.error("Admin scheduleMetricsBulk error:", error);
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: `Failed to schedule metrics: ${error instanceof Error ? error.message : 'Unknown error'}`,
@@ -718,7 +646,6 @@ export const adminRouter = createTRPCRouter({
     .mutation(async ({ input }) => {
       try {
         const patch: Partial<typeof videos.$inferInsert> = {};
-        // Only set fields if they are provided (allowing partial updates)
         if (input.views !== undefined) {
           patch.viewCountOverride = input.views;
         }
@@ -736,12 +663,11 @@ export const adminRouter = createTRPCRouter({
             .where(inArray(videos.id, input.videoIds));
         }
 
-        return { 
-          success: true, 
-          message: `Updated metrics for ${input.videoIds.length} video(s)` 
+        return {
+          success: true,
+          message: `Updated metrics for ${input.videoIds.length} video(s)`
         };
       } catch (error) {
-        console.error("Admin updateMetricsBulk error:", error);
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: `Failed to update metrics: ${error instanceof Error ? error.message : 'Unknown error'}`,
@@ -749,7 +675,6 @@ export const adminRouter = createTRPCRouter({
       }
     }),
 
-  // Category Management
   getAllCategories: requireAdmin.query(async () => {
     try {
       const categoriesWithVideoCount = await db
@@ -773,8 +698,7 @@ export const adminRouter = createTRPCRouter({
         .orderBy(desc(categories.createdAt));
 
       return categoriesWithVideoCount;
-    } catch (error) {
-      console.error("Get all categories error:", error);
+    } catch {
       throw new TRPCError({
         code: "INTERNAL_SERVER_ERROR",
         message: "Failed to get categories",
@@ -783,13 +707,12 @@ export const adminRouter = createTRPCRouter({
   }),
 
   createCategory: requireAdmin
-    .input(z.object({ 
+    .input(z.object({
       name: z.string().min(1).max(100),
       description: z.string().optional()
     }))
     .mutation(async ({ input }) => {
       try {
-        console.log("Admin createCategory:", input);
         const result = await db
           .insert(categories)
           .values({
@@ -797,11 +720,9 @@ export const adminRouter = createTRPCRouter({
             description: input.description,
           })
           .returning();
-        
-        console.log("Category created:", result);
+
         return { success: true, category: result[0] };
       } catch (error) {
-        console.error("Create category error:", error);
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: `Failed to create category: ${error instanceof Error ? error.message : 'Unknown error'}`,
@@ -810,14 +731,13 @@ export const adminRouter = createTRPCRouter({
     }),
 
   updateCategory: requireAdmin
-    .input(z.object({ 
+    .input(z.object({
       id: z.string(),
       name: z.string().min(1).max(100),
       description: z.string().optional()
     }))
     .mutation(async ({ input }) => {
       try {
-        console.log("Admin updateCategory:", input);
         const result = await db
           .update(categories)
           .set({
@@ -827,11 +747,9 @@ export const adminRouter = createTRPCRouter({
           })
           .where(eq(categories.id, input.id))
           .returning();
-        
-        console.log("Category updated:", result);
+
         return { success: true, category: result[0] };
       } catch (error) {
-        console.error("Update category error:", error);
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: `Failed to update category: ${error instanceof Error ? error.message : 'Unknown error'}`,
@@ -843,32 +761,24 @@ export const adminRouter = createTRPCRouter({
     .input(z.object({ id: z.string() }))
     .mutation(async ({ input }) => {
       try {
-        console.log("Admin deleteCategory:", input.id);
-        
-        // First, check if any videos use this category
         const videosWithCategory = await db
           .select({ count: count() })
           .from(videos)
           .where(eq(videos.categoryId, input.id));
 
         if (videosWithCategory[0]?.count > 0) {
-          // Set category to null for videos using this category
           await db
             .update(videos)
             .set({ categoryId: null })
             .where(eq(videos.categoryId, input.id));
-          console.log("Updated videos to remove category reference");
         }
-        
-        // Then delete the category
-        const result = await db
+
+        await db
           .delete(categories)
           .where(eq(categories.id, input.id));
-        
-        console.log("Category deleted:", result);
+
         return { success: true };
       } catch (error) {
-        console.error("Delete category error:", error);
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: `Failed to delete category: ${error instanceof Error ? error.message : 'Unknown error'}`,
@@ -877,7 +787,7 @@ export const adminRouter = createTRPCRouter({
     }),
 
   searchCategories: requireAdmin
-    .input(z.object({ 
+    .input(z.object({
       searchTerm: z.string()
     }))
     .query(async ({ input }) => {
@@ -902,8 +812,7 @@ export const adminRouter = createTRPCRouter({
           .orderBy(desc(categories.createdAt));
 
         return searchResults;
-      } catch (error) {
-        console.error("Search categories error:", error);
+      } catch {
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: "Failed to search categories",
@@ -930,13 +839,12 @@ export const adminRouter = createTRPCRouter({
           .groupBy(sql`DATE(${videoViews.createdAt})`)
           .orderBy(sql`DATE(${videoViews.createdAt})`);
 
-        // Fill in missing dates with 0 views
         const result = [];
         for (let i = input.days - 1; i >= 0; i--) {
           const currentDate = new Date();
           currentDate.setDate(currentDate.getDate() - i);
           const dateStr = currentDate.toISOString().split('T')[0];
-          
+
           const existingData = viewsData.find(item => item.date === dateStr);
           result.push({
             date: dateStr,
@@ -945,8 +853,7 @@ export const adminRouter = createTRPCRouter({
         }
 
         return result;
-      } catch (error) {
-        console.error("Get views over time error:", error);
+      } catch {
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: "Failed to get views over time",
@@ -954,7 +861,6 @@ export const adminRouter = createTRPCRouter({
       }
     }),
 
-  // Maintenance Banner (public read, admin write)
   getMaintenanceBanner: baseProcedure.query(async () => {
     const data = await redis.get<{ enabled: boolean; message: string }>("maintenanceBanner");
     return data ?? { enabled: false, message: "" };

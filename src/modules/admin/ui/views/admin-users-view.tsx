@@ -208,8 +208,8 @@ const UserRow = ({ user }: UserRowProps) => {
   if (window.confirm(`Are you sure you want to delete user "${user.name}"? This action cannot be undone.`)) {
     try {
         await deleteUserMutation.mutateAsync({ id: user.id });
-      } catch (error) {
-        console.error("Failed to delete user:", error);
+      } catch {
+        // Mutation error handled by tRPC
       }
     }
   };

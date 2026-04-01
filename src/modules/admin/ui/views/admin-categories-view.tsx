@@ -179,8 +179,8 @@ const AddCategoryForm = ({ onClose }: { onClose: () => void }) => {
         name: name.trim(),
         description: description.trim() || undefined,
       });
-    } catch (error) {
-      console.error("Failed to create category:", error);
+    } catch {
+      // Mutation error handled by tRPC
     }
   };
 
@@ -273,8 +273,8 @@ const CategoryCard = ({ category, isEditing, onEdit, onEditComplete }: CategoryC
         name: editName.trim(),
         description: editDescription.trim() || undefined,
       });
-    } catch (error) {
-      console.error("Failed to update category:", error);
+    } catch {
+      // Mutation error handled by tRPC
     }
   };
 
@@ -282,8 +282,8 @@ const CategoryCard = ({ category, isEditing, onEdit, onEditComplete }: CategoryC
     if (window.confirm(`Are you sure you want to delete "${category.name}"? This will remove the category from ${category.videoCount} videos.`)) {
       try {
         await deleteMutation.mutateAsync({ id: category.id });
-      } catch (error) {
-        console.error("Failed to delete category:", error);
+      } catch {
+        // Mutation error handled by tRPC
       }
     }
   };

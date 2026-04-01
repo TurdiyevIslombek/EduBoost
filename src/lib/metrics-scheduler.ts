@@ -139,19 +139,15 @@ export async function processScheduledMetrics() {
       totalViewsAdded += viewsToAdd;
       totalLikesAdded += likesToAdd;
 
-      console.log(
-        `Applied ${viewsToAdd} views and ${likesToAdd} likes to video ${schedule.videoId}`
-      );
     }
 
-    return { 
-      success: true, 
+    return {
+      success: true,
       processed: activeSchedules.length,
       viewsAdded: totalViewsAdded,
-      likesAdded: totalLikesAdded 
+      likesAdded: totalLikesAdded
     };
   } catch (error) {
-    console.error("Error processing scheduled metrics:", error);
     throw error;
   }
 }

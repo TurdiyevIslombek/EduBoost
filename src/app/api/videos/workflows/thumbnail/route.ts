@@ -45,7 +45,7 @@ export const { POST } = serve(
             size: "1792x1024",
         },
         headers: {
-            authorization: `Bearer ${process.env.OPENAI_API_KEY}`
+            authorization: `Bearer ${process.env.OPENAI_API_KEY!}`
         },
 
     });

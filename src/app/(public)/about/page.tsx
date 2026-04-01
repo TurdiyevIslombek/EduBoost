@@ -2,6 +2,17 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeftIcon, BookOpenIcon, UsersIcon, TrendingUpIcon, HeartIcon, StarIcon, GraduationCapIcon, TargetIcon, LightbulbIcon, RocketIcon } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "About EduBoost - Our Mission & Story",
+  description: "Learn about EduBoost's mission to empower students to become teachers. Free, collaborative education by students, for students.",
+  openGraph: {
+    title: "About EduBoost - Our Mission & Story",
+    description: "Empowering students to become teachers through free, collaborative education.",
+    url: "https://www.eduboostonline.com/about",
+  },
+};
 
 const AboutPage = () => {
   return (

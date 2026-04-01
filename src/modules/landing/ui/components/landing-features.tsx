@@ -103,7 +103,7 @@ export const LandingFeatures = () => {
               return (
                 <div
                   key={feature.number}
-                  className="relative bg-white border border-slate-100 rounded-2xl p-8 shadow-sm hover:shadow-xl hover:border-emerald-200/60 transition-all duration-300 group hover:-translate-y-1"
+                  className="relative bg-white border border-slate-100 rounded-2xl p-8 shadow-sm hover:shadow-xl hover:border-emerald-200/60 transition-all duration-500 group perspective-1000 hover:[transform:perspective(1000px)_rotateY(2deg)_rotateX(-2deg)_translateZ(10px)]"
                 >
                   {/* Large Number */}
                   <span className="absolute top-6 right-6 text-7xl font-bold text-slate-100 group-hover:text-emerald-100 transition-colors select-none">
@@ -173,25 +173,25 @@ export const LandingFeatures = () => {
             {/* Right Stats */}
             <div className="bg-gradient-to-br from-emerald-600 via-teal-600 to-cyan-600 rounded-3xl p-10 shadow-2xl shadow-emerald-600/20">
               <div className="grid grid-cols-2 gap-8">
-                <div className="text-center p-4 bg-white/10 rounded-2xl backdrop-blur-sm">
+                <div className="text-center p-4 bg-white/10 rounded-2xl backdrop-blur-sm transition-transform duration-500 hover:[transform:perspective(800px)_rotateY(-3deg)_translateZ(15px)]">
                   <div className="text-5xl font-bold text-white mb-2">50+</div>
                   <div className="text-emerald-100 text-sm uppercase tracking-wider font-medium">
                     Lessons
                   </div>
                 </div>
-                <div className="text-center p-4 bg-white/10 rounded-2xl backdrop-blur-sm">
+                <div className="text-center p-4 bg-white/10 rounded-2xl backdrop-blur-sm transition-transform duration-500 hover:[transform:perspective(800px)_rotateY(3deg)_translateZ(15px)]">
                   <div className="text-5xl font-bold text-white mb-2">1000+</div>
                   <div className="text-emerald-100 text-sm uppercase tracking-wider font-medium">
                     Students
                   </div>
                 </div>
-                <div className="text-center p-4 bg-white/10 rounded-2xl backdrop-blur-sm">
+                <div className="text-center p-4 bg-white/10 rounded-2xl backdrop-blur-sm transition-transform duration-500 hover:[transform:perspective(800px)_rotateY(-3deg)_translateZ(15px)]">
                   <div className="text-5xl font-bold text-white mb-2">100%</div>
                   <div className="text-emerald-100 text-sm uppercase tracking-wider font-medium">
                     Free
                   </div>
                 </div>
-                <div className="text-center p-4 bg-white/10 rounded-2xl backdrop-blur-sm">
+                <div className="text-center p-4 bg-white/10 rounded-2xl backdrop-blur-sm transition-transform duration-500 hover:[transform:perspective(800px)_rotateY(3deg)_translateZ(15px)]">
                   <div className="text-5xl font-bold text-white mb-2">4.9</div>
                   <div className="text-emerald-100 text-sm uppercase tracking-wider font-medium">
                     Rating

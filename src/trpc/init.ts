@@ -66,7 +66,9 @@ export const protectedProcedure = t.procedure.use(async function isAuthed (opts)
       .set({ lastSeenAt: now })
       .where(eq(users.id, user.id))
       .execute()
-      .catch(() => {}); // Fire-and-forget, don't block request
+      .catch(() => {
+        // Non-critical: lastSeenAt update failed, will retry on next request
+      });
   }
 
   return opts.next({

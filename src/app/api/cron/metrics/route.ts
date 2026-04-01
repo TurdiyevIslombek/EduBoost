@@ -22,7 +22,6 @@ export async function GET(request: NextRequest) {
       ...result,
     });
   } catch (error) {
-    console.error("Error in metrics cron job:", error);
     return NextResponse.json(
       {
         success: false,

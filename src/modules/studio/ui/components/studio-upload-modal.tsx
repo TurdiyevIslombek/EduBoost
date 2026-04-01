@@ -23,8 +23,6 @@ export const StudioUploadModal = () => {
             uploadStartedRef.current = false; // Reset upload started flag
         },
         onError: (error) => {
-            console.error("Video creation error:", error);
-            
             // Handle Mux free plan limit error specifically
             if (error.message.includes("Free plan is limited to 10 assets")) {
                 toast.error("Upload limit reached", {
@@ -60,8 +58,8 @@ export const StudioUploadModal = () => {
                     onSuccess: () => {
                         utils.studio.getMany.invalidate();
                     },
-                    onError: (error) => {
-                        console.error("Failed to cleanup empty video:", error);
+                    onError: () => {
+                        // Cleanup failed, video will be orphaned
                     }
                 }
             );
