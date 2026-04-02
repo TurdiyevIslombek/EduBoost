@@ -23,6 +23,7 @@ export const LandingNavbar = () => {
                 width={32}
                 height={32}
                 className="rounded-lg"
+                priority
               />
             </div>
             <span className="text-xl font-bold text-slate-800 tracking-tight">

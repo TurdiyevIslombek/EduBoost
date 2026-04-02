@@ -2,6 +2,8 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   images: {
+    formats: ["image/avif", "image/webp"],
+    minimumCacheTTL: 31536000,
     remotePatterns: [
       {
         protocol: "https",
@@ -13,22 +15,21 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: "https",
-        hostname: "**.ufs.sh", // <-- This allows any subdomain of ufs.sh
+        hostname: "**.ufs.sh",
       },
       {
         protocol: "https",
-        hostname: "img.clerk.com", // <-- Allow Clerk profile images
+        hostname: "img.clerk.com",
       },
       {
         protocol: "https",
-        hostname: "images.clerk.dev", // <-- Allow Clerk CDN images
+        hostname: "images.clerk.dev",
       },
       {
         protocol: "https",
-        hostname: "**.clerk.com", // <-- Allow all Clerk subdomains
+        hostname: "**.clerk.com",
       },
     ],
-    // Add error handling for failed images
     dangerouslyAllowSVG: true,
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
   },

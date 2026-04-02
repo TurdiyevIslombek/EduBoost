@@ -1,8 +1,13 @@
-import { LandingHero } from "../components/landing-hero";
-import { LandingFeatures } from "../components/landing-features";
+import dynamic from "next/dynamic";
 import { LandingNavbar } from "../components/landing-navbar";
+import { LandingHero } from "../components/landing-hero";
 import { LandingFooter } from "../components/landing-footer";
 import { AuthRedirectShell } from "@/components/auth-redirect-shell";
+
+const LandingFeatures = dynamic(() =>
+  import("../components/landing-features").then((mod) => ({ default: mod.LandingFeatures })),
+  { loading: () => <div className="py-24" /> }
+);
 
 export const LandingView = () => {
   return (
@@ -15,7 +20,7 @@ export const LandingView = () => {
           <div className="absolute top-1/3 right-1/4 w-[400px] h-[400px] bg-teal-200/30 rounded-full blur-3xl animate-blob animation-delay-2000" />
           <div className="absolute bottom-1/4 left-1/3 w-[600px] h-[600px] bg-cyan-200/20 rounded-full blur-3xl animate-blob animation-delay-4000" />
         </div>
-        
+
         <LandingNavbar />
         <LandingHero />
         <LandingFeatures />

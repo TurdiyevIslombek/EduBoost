@@ -127,6 +127,8 @@
 
 .animate-blob {
   animation: blob 7s infinite;
+  will-change: transform;
+  contain: layout style paint;
 }
 
 .animate-float {

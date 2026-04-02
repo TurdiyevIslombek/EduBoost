@@ -27,17 +27,18 @@ export const VideoThumbnail = ({
     <div className="relative group">
       <div className="relative w-full overflow-hidden rounded-md aspect-video">
         <Image
-          unoptimized={true}
           src={imageUrl ?? "/placeholder.svg"}
           alt={title}
           fill
+          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
           className="size-full object-cover group-hover:opacity-0"
         />
         <Image
-          unoptimized={true}
           src={previewUrl ?? "/placeholder.svg"}
           alt={title}
           fill
+          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+          loading="lazy"
           className="size-full object-cover opacity-0 group-hover:opacity-100"
         />
       </div>
