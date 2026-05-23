@@ -367,6 +367,10 @@ export const videosRouter = createTRPCRouter({
                 throw new TRPCError({code:"NOT_FOUND"})
             }
 
+            if (existingVideo.visibility === "private" && existingVideo.userId !== userId) {
+                throw new TRPCError({code:"NOT_FOUND"})
+            }
+
             // Apply DB overrides to totals
             return {
               ...existingVideo,
