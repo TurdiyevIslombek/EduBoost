@@ -6,6 +6,10 @@ import { users } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import type { Metadata } from "next";
 
+export const revalidate = 3600;
+
+const SITE_URL = "https://www.eduboostonline.com";
+
 interface PageProps {
   params: Promise<{
     userId: string;
@@ -22,20 +26,23 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     .limit(1);
 
   if (!user) {
-    return { title: "User Not Found" };
+    return { title: "User Not Found", robots: { index: false, follow: false } };
   }
 
   const title = `${user.name} - EduBoost Creator`;
   const description = `Watch courses and videos by ${user.name} on EduBoost`;
+  const canonicalUrl = `${SITE_URL}/users/${userId}`;
 
   return {
     title,
     description,
+    alternates: { canonical: canonicalUrl },
     openGraph: {
       title,
       description,
       type: "profile",
-      url: `https://www.eduboostonline.com/users/${userId}`,
+      url: canonicalUrl,
+      siteName: "EduBoost",
       images: [{ url: user.imageUrl, width: 200, height: 200, alt: user.name }],
     },
     twitter: {
@@ -52,8 +59,47 @@ const Page = async ({ params }: PageProps) => {
 
   void trpc.users.getOne.prefetch({id: userId});
   void trpc.videos.getMany.prefetchInfinite({userId, limit:DEFAULT_LIMIT});
+
+  const [user] = await db
+    .select({ name: users.name, imageUrl: users.imageUrl })
+    .from(users)
+    .where(eq(users.id, userId))
+    .limit(1);
+
+  const canonicalUrl = `${SITE_URL}/users/${userId}`;
+
+  const personJsonLd = user ? {
+    "@context": "https://schema.org",
+    "@type": "Person",
+    name: user.name,
+    image: user.imageUrl,
+    url: canonicalUrl,
+  } : null;
+
+  const breadcrumbJsonLd = user ? {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Home", item: SITE_URL },
+      { "@type": "ListItem", position: 2, name: "Creators", item: `${SITE_URL}/feed/trending` },
+      { "@type": "ListItem", position: 3, name: user.name, item: canonicalUrl },
+    ],
+  } : null;
+
   return (
     <HydrateClient>
+        {personJsonLd && (
+          <script
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{ __html: JSON.stringify(personJsonLd) }}
+          />
+        )}
+        {breadcrumbJsonLd && (
+          <script
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
+          />
+        )}
         <UserView userId={userId} />
     </HydrateClient>
   );

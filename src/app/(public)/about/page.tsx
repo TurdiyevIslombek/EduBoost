@@ -7,10 +7,18 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "About EduBoost - Our Mission & Story",
   description: "Learn about EduBoost's mission to empower students to become teachers. Free, collaborative education by students, for students.",
+  alternates: { canonical: "/about" },
   openGraph: {
     title: "About EduBoost - Our Mission & Story",
     description: "Empowering students to become teachers through free, collaborative education.",
     url: "https://www.eduboostonline.com/about",
+    type: "website",
+    siteName: "EduBoost",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "About EduBoost - Our Mission & Story",
+    description: "Empowering students to become teachers through free, collaborative education.",
   },
 };
 

@@ -8,10 +8,18 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Contact EduBoost - Get in Touch",
   description: "Have questions about EduBoost? Contact us via Telegram for partnerships, support, or to join our team of student educators.",
+  alternates: { canonical: "/contact" },
   openGraph: {
     title: "Contact EduBoost - Get in Touch",
     description: "Reach out to the EduBoost team for support, partnerships, or to join us.",
     url: "https://www.eduboostonline.com/contact",
+    type: "website",
+    siteName: "EduBoost",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Contact EduBoost - Get in Touch",
+    description: "Reach out to the EduBoost team for support, partnerships, or to join us.",
   },
 };
 

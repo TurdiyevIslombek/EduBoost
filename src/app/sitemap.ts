@@ -1,15 +1,16 @@
 import { db } from "@/db";
 import { users, videos } from "@/db/schema";
-import { eq, inArray } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import type { MetadataRoute } from "next";
 
 const BASE_URL = "https://www.eduboostonline.com";
+const SITEMAP_URL_LIMIT = 50000;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const publicVideos = await db
     .select({ id: videos.id, updatedAt: videos.updatedAt, userId: videos.userId })
     .from(videos)
-    .where(eq(videos.visibility, "public"));
+    .where(and(eq(videos.visibility, "public"), eq(videos.muxStatus, "ready")));
 
   const videoUrls = publicVideos.map((video) => ({
     url: `${BASE_URL}/videos/${video.id}`,
@@ -18,7 +19,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.8,
   }));
 
-  // Get unique creator user IDs from public videos
   const creatorIds = [...new Set(publicVideos.map((v) => v.userId))];
   const creators = creatorIds.length > 0
     ? await db
@@ -34,7 +34,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.6,
   }));
 
-  return [
+  const staticUrls: MetadataRoute.Sitemap = [
     {
       url: BASE_URL,
       lastModified: new Date(),
@@ -59,13 +59,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "daily",
       priority: 0.8,
     },
-    {
-      url: `${BASE_URL}/search`,
-      lastModified: new Date(),
-      changeFrequency: "daily",
-      priority: 0.8,
-    },
-    ...videoUrls,
-    ...userUrls,
   ];
+
+  return [...staticUrls, ...videoUrls, ...userUrls].slice(0, SITEMAP_URL_LIMIT);
 }

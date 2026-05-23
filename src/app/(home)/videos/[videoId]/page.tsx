@@ -3,15 +3,24 @@ import { VideoView } from "@/modules/videos/ui/views/video-view";
 import { HydrateClient, trpc } from "@/trpc/server";
 import { db } from "@/db";
 import { users, videos } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import type { Metadata } from "next";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 3600;
+
+const SITE_URL = "https://www.eduboostonline.com";
 
 interface PageProps {
     params: Promise<{
         videoId: string;
     }>
+}
+
+function formatIsoDuration(seconds: number | null | undefined): string | undefined {
+    if (!seconds || seconds <= 0) return undefined;
+    const minutes = Math.floor(seconds / 60);
+    const remainder = seconds % 60;
+    return `PT${minutes}M${remainder}S`;
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
@@ -23,6 +32,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
             description: videos.description,
             thumbnailUrl: videos.thumbnailUrl,
             createdAt: videos.createdAt,
+            visibility: videos.visibility,
             userName: users.name,
         })
         .from(videos)
@@ -31,20 +41,27 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
         .limit(1);
 
     if (!video) {
-        return { title: "Video Not Found" };
+        return { title: "Video Not Found", robots: { index: false, follow: false } };
     }
 
+    const isPublic = video.visibility === "public";
     const title = video.title;
     const description = video.description || `Watch "${video.title}" by ${video.userName || "a creator"} on EduBoost`;
+    const canonicalUrl = `${SITE_URL}/videos/${videoId}`;
 
     return {
         title,
         description,
+        alternates: { canonical: canonicalUrl },
+        robots: isPublic
+            ? { index: true, follow: true }
+            : { index: false, follow: false },
         openGraph: {
             title,
             description,
             type: "video.other",
-            url: `https://www.eduboostonline.com/videos/${videoId}`,
+            url: canonicalUrl,
+            siteName: "EduBoost",
             ...(video.thumbnailUrl && { images: [{ url: video.thumbnailUrl, width: 1280, height: 720, alt: title }] }),
         },
         twitter: {
@@ -71,32 +88,65 @@ const Page = async ({ params }: PageProps) => {
             duration: videos.duration,
             createdAt: videos.createdAt,
             muxPlaybackId: videos.muxPlaybackId,
+            userId: videos.userId,
+            viewCountOverride: videos.viewCountOverride,
             userName: users.name,
         })
         .from(videos)
         .leftJoin(users, eq(videos.userId, users.id))
-        .where(eq(videos.id, videoId))
+        .where(and(eq(videos.id, videoId), eq(videos.visibility, "public")))
         .limit(1);
 
-    const jsonLd = video ? {
+    const canonicalUrl = `${SITE_URL}/videos/${videoId}`;
+
+    const videoJsonLd = video ? {
         "@context": "https://schema.org",
         "@type": "VideoObject",
         name: video.title,
         description: video.description || `Watch "${video.title}" on EduBoost`,
         thumbnailUrl: video.thumbnailUrl || undefined,
         uploadDate: video.createdAt.toISOString(),
-        duration: video.duration ? `PT${Math.floor(video.duration / 60)}M${video.duration % 60}S` : undefined,
-        contentUrl: `https://www.eduboostonline.com/videos/${videoId}`,
+        duration: formatIsoDuration(video.duration),
+        contentUrl: canonicalUrl,
         embedUrl: video.muxPlaybackId ? `https://stream.mux.com/${video.muxPlaybackId}` : undefined,
-        author: video.userName ? { "@type": "Person", name: video.userName } : undefined,
+        author: video.userName
+            ? {
+                "@type": "Person",
+                name: video.userName,
+                url: `${SITE_URL}/users/${video.userId}`,
+            }
+            : undefined,
+        interactionStatistic: video.viewCountOverride > 0
+            ? {
+                "@type": "InteractionCounter",
+                interactionType: { "@type": "WatchAction" },
+                userInteractionCount: video.viewCountOverride,
+            }
+            : undefined,
+    } : null;
+
+    const breadcrumbJsonLd = video ? {
+        "@context": "https://schema.org",
+        "@type": "BreadcrumbList",
+        itemListElement: [
+            { "@type": "ListItem", position: 1, name: "Home", item: SITE_URL },
+            { "@type": "ListItem", position: 2, name: "Trending", item: `${SITE_URL}/feed/trending` },
+            { "@type": "ListItem", position: 3, name: video.title, item: canonicalUrl },
+        ],
     } : null;
 
     return(
         <HydrateClient>
-            {jsonLd && (
+            {videoJsonLd && (
                 <script
                     type="application/ld+json"
-                    dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+                    dangerouslySetInnerHTML={{ __html: JSON.stringify(videoJsonLd) }}
+                />
+            )}
+            {breadcrumbJsonLd && (
+                <script
+                    type="application/ld+json"
+                    dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
                 />
             )}
             <VideoView videoId={videoId}/>
