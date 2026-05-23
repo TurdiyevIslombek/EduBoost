@@ -95,7 +95,27 @@
       "source": "/(.*)",
       "has": [{ "type": "host", "value": "eduboostonline.com" }],
       "destination": "https://www.eduboostonline.com/$1",
-      "permanent": true
+      "statusCode": 308
+    },
+    {
+      "source": "/videos",
+      "destination": "/feed/trending",
+      "statusCode": 308
+    },
+    {
+      "source": "/videos/",
+      "destination": "/feed/trending",
+      "statusCode": 308
+    },
+    {
+      "source": "/users",
+      "destination": "/feed/trending",
+      "statusCode": 308
+    },
+    {
+      "source": "/users/",
+      "destination": "/feed/trending",
+      "statusCode": 308
     }
   ]
 }
