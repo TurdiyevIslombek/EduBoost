@@ -3,8 +3,10 @@ import { VideoView } from "@/modules/videos/ui/views/video-view";
 import { HydrateClient, trpc } from "@/trpc/server";
 import { db } from "@/db";
 import { users, videos } from "@/db/schema";
-import { and, eq } from "drizzle-orm";
+import { auth } from "@clerk/nextjs/server";
+import { eq } from "drizzle-orm";
 import type { Metadata } from "next";
+import { notFound } from "next/navigation";
 
 export const revalidate = 3600;
 
@@ -76,10 +78,6 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 const Page = async ({ params }: PageProps) => {
     const {videoId} = await params;
 
-    void trpc.videos.getOne.prefetch({id: videoId});
-    void trpc.comments.getMany.prefetchInfinite({videoId, limit: DEFAULT_LIMIT});
-    void trpc.suggestions.getMany.prefetchInfinite({videoId, limit: DEFAULT_LIMIT})
-
     const [video] = await db
         .select({
             title: videos.title,
@@ -89,17 +87,37 @@ const Page = async ({ params }: PageProps) => {
             createdAt: videos.createdAt,
             muxPlaybackId: videos.muxPlaybackId,
             userId: videos.userId,
+            visibility: videos.visibility,
             viewCountOverride: videos.viewCountOverride,
             userName: users.name,
         })
         .from(videos)
         .leftJoin(users, eq(videos.userId, users.id))
-        .where(and(eq(videos.id, videoId), eq(videos.visibility, "public")))
+        .where(eq(videos.id, videoId))
         .limit(1);
 
+    if (!video) {
+        notFound();
+    }
+
+    if (video.visibility === "private") {
+        const { userId: clerkUserId } = await auth();
+        const [viewer] = clerkUserId
+            ? await db.select({ id: users.id }).from(users).where(eq(users.clerkId, clerkUserId)).limit(1)
+            : [];
+        if (!viewer || viewer.id !== video.userId) {
+            notFound();
+        }
+    }
+
+    void trpc.videos.getOne.prefetch({id: videoId});
+    void trpc.comments.getMany.prefetchInfinite({videoId, limit: DEFAULT_LIMIT});
+    void trpc.suggestions.getMany.prefetchInfinite({videoId, limit: DEFAULT_LIMIT})
+
+    const isPublic = video.visibility === "public";
     const canonicalUrl = `${SITE_URL}/videos/${videoId}`;
 
-    const videoJsonLd = video ? {
+    const videoJsonLd = isPublic && video ? {
         "@context": "https://schema.org",
         "@type": "VideoObject",
         name: video.title,
@@ -125,7 +143,7 @@ const Page = async ({ params }: PageProps) => {
             : undefined,
     } : null;
 
-    const breadcrumbJsonLd = video ? {
+    const breadcrumbJsonLd = isPublic ? {
         "@context": "https://schema.org",
         "@type": "BreadcrumbList",
         itemListElement: [

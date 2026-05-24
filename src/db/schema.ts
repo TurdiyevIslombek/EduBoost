@@ -1,5 +1,5 @@
 import { relations } from "drizzle-orm";
-import { boolean, foreignKey, integer, pgEnum, pgTable, primaryKey, text, timestamp, uniqueIndex, uuid, } from "drizzle-orm/pg-core";
+import { boolean, foreignKey, index, integer, pgEnum, pgTable, primaryKey, text, timestamp, uniqueIndex, uuid, } from "drizzle-orm/pg-core";
 import {
     createInsertSchema,
     createSelectSchema,
@@ -89,7 +89,9 @@ export const subscriptions = pgTable("subscriptions",{
     primaryKey({
         name: "subscriptions_pk",
         columns: [t.viewerId, t.creatorId]
-    })
+    }),
+    index("subscriptions_creator_id_idx").on(t.creatorId),
+    index("subscriptions_viewer_id_idx").on(t.viewerId),
 ])
 
 export const subscriptionRelations = relations(subscriptions, ({one}) => ({
@@ -153,7 +155,14 @@ export const videos = pgTable("videos", {
     likeCountOverride: integer("like_count_override").default(0).notNull(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
+}, (t) => [
+    index("videos_user_id_idx").on(t.userId),
+    index("videos_visibility_idx").on(t.visibility),
+    index("videos_mux_status_idx").on(t.muxStatus),
+    index("videos_category_id_idx").on(t.categoryId),
+    index("videos_created_at_idx").on(t.createdAt),
+    index("videos_visibility_created_at_idx").on(t.visibility, t.createdAt),
+]);
 
 export const videoInsertSchema = createInsertSchema(videos);
 export const videoUpdateSchema = createUpdateSchema(videos);
@@ -193,6 +202,10 @@ export const comments = pgTable("comments", {
             name: "comments_parent_id_fkey",
         })
         .onDelete("cascade"),
+        index("comments_video_id_idx").on(t.videoId),
+        index("comments_parent_id_idx").on(t.parentId),
+        index("comments_video_parent_created_idx").on(t.videoId, t.parentId, t.createdAt),
+        index("comments_user_id_idx").on(t.userId),
     ]
 })
 
@@ -260,6 +273,7 @@ export const videoViews = pgTable("video_views", {
         name: "video_views_pk",
         columns: [t.userId, t.videoId]
     }),
+    index("video_views_video_id_idx").on(t.videoId),
 ]);
 
 export const videoViewRelations = relations(videoViews, ({one}) => ({
@@ -319,6 +333,7 @@ export const videoReactions = pgTable("video_reactions", {
         name: "video_reactions_pk",
         columns: [t.userId, t.videoId]
     }),
+    index("video_reactions_video_id_type_idx").on(t.videoId, t.type),
 ]);
 
 export const videoReactionRelations = relations(videoReactions, ({one}) => ({

@@ -52,11 +52,11 @@ export const searchRouter = createTRPCRouter({
           categoryId ? eq(videos.categoryId, categoryId) : undefined,
           cursor
             ? or(
+                lt(videos.updatedAt, cursor.updatedAt),
                 and(
-                  lt(videos.updatedAt, cursor.updatedAt),
-                  eq(videos.id, cursor.id)
-                ),
-                lt(videos.updatedAt, cursor.updatedAt)
+                  eq(videos.updatedAt, cursor.updatedAt),
+                  lt(videos.id, cursor.id)
+                )
               )
             : undefined
         )).orderBy(
