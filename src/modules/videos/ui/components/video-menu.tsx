@@ -43,7 +43,7 @@ export const VideoMenu = ({
             />
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                    <Button variant={variant} size="icon" className="rounded-full">
+                    <Button variant={variant} size="icon" aria-label="Video options" className="rounded-full">
                         <MoreVerticalIcon />
                     </Button>
                 </DropdownMenuTrigger>

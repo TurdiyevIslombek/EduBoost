@@ -1,5 +1,6 @@
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatDuration } from "@/lib/utils";
+import { PlayIcon } from "lucide-react";
 import Image from "next/image";
 
 interface VideoThumbnailProps {
@@ -42,7 +43,16 @@ export const VideoThumbnail = ({
           className="size-full object-cover opacity-0 group-hover:opacity-100"
         />
       </div>
-      <div className="absolute bottom-2 right-2 px-2 py-1 rounded-sm bg-slate-900 text-white text-xs font-semibold">
+      {/* Play overlay — fades in on hover */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+      >
+        <div className="bg-black/55 backdrop-blur-sm rounded-full p-3 shadow-lg">
+          <PlayIcon className="size-6 text-white fill-white" />
+        </div>
+      </div>
+      <div className="absolute bottom-2 right-2 px-2 py-1 rounded-sm bg-slate-900/90 text-white text-xs font-semibold">
         {formatDuration(duration)}
       </div>
     </div>

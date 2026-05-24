@@ -105,14 +105,16 @@ export const CommentItem = ({comment, variant = "comment"} : CommentItemProps) =
                                 disabled={like.isPending}
                                 variant="ghost"
                                 size="icon"
+                                aria-label={comment.viewerReaction === "like" ? "Unlike comment" : "Like comment"}
+                                aria-pressed={comment.viewerReaction === "like"}
                                 className="size-8"
                                 onClick={() => like.mutate({commentId: comment.id})}
 
                             >
-                                <ThumbsUpIcon 
+                                <ThumbsUpIcon
                                     className={cn(
                                         comment.viewerReaction === "like" && "fill-black",
-                                        
+
                                     )}
                                 />
 
@@ -124,11 +126,13 @@ export const CommentItem = ({comment, variant = "comment"} : CommentItemProps) =
                                 disabled={dislike.isPending}
                                 variant="ghost"
                                 size="icon"
+                                aria-label={comment.viewerReaction === "dislike" ? "Remove dislike" : "Dislike comment"}
+                                aria-pressed={comment.viewerReaction === "dislike"}
                                 className="size-8"
                                 onClick={() => dislike.mutate({commentId: comment.id})}
 
                             >
-                                <ThumbsDownIcon 
+                                <ThumbsDownIcon
                                     className={cn(
                                         comment.viewerReaction === "dislike" && "fill-black",
 
@@ -154,7 +158,7 @@ export const CommentItem = ({comment, variant = "comment"} : CommentItemProps) =
                 </div>
                     <DropdownMenu modal={false}>
                         <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="size-8"> 
+                            <Button variant="ghost" size="icon" aria-label="Comment options" className="size-8">
                                 <MoreVerticalIcon />
                             </Button>
                         </DropdownMenuTrigger>

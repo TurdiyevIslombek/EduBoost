@@ -6,6 +6,7 @@ import Script from "next/script";
 import "./globals.css";
 import { TRPCProvider } from "@/trpc/client";
 import { Toaster } from "@/components/ui/sonner";
+import { ThemeProvider } from "@/components/theme-provider";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -107,7 +108,7 @@ export default function RootLayout({
       afterSignInUrl="/home"
       afterSignUpUrl="/home"
     >
-      <html lang="en">
+      <html lang="en" suppressHydrationWarning>
         <body
           className={inter.className}
         >
@@ -123,11 +124,18 @@ export default function RootLayout({
             strategy="beforeInteractive"
             dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
           />
-          <TRPCProvider>
-            <Toaster />
-            {children}
-            <SpeedInsights />
-          </TRPCProvider>
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="light"
+            enableSystem
+            disableTransitionOnChange
+          >
+            <TRPCProvider>
+              <Toaster />
+              {children}
+              <SpeedInsights />
+            </TRPCProvider>
+          </ThemeProvider>
         </body>
       </html>
     </ClerkProvider>

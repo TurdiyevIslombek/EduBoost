@@ -33,7 +33,7 @@ export const AuthButton = () => {
             <SignInButton mode="modal">
                 <Button
                 variant="outline"
-                className="px-4 py-2 text-sm font-medium  rounded-full text-blue-600 hover:text-blue-500 border-blue-500/20 shadow-none "
+                className="px-4 py-2 text-sm font-medium rounded-full text-emerald-700 hover:text-emerald-800 hover:bg-emerald-50 border-emerald-500/30 shadow-none dark:text-emerald-400 dark:hover:text-emerald-300 dark:hover:bg-emerald-950/30 dark:border-emerald-400/30"
                 >
                 <UserCircleIcon />
                 Sign in

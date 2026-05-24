@@ -3,6 +3,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { SearchInput } from "../home-navbar/search-input";
 import { AuthButton } from "@/modules/auth/ui/components/auth-button";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 export const HomeNavbar = () => {
   return (
@@ -32,8 +33,9 @@ export const HomeNavbar = () => {
           <SearchInput />
         </div>
 
-        {/* Auth Button */}
-        <div className="flex-shrink-0 items-center flex gap-4">
+        {/* Theme toggle + Auth */}
+        <div className="flex-shrink-0 items-center flex gap-2 sm:gap-4">
+          <ThemeToggle />
           <AuthButton />
         </div>
       </div>
