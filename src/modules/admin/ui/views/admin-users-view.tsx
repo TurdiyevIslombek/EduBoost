@@ -21,7 +21,7 @@ export const AdminUsersView = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
             User Management
           </h1>
           <p className="text-gray-600 mt-2">
@@ -29,7 +29,7 @@ export const AdminUsersView = () => {
           </p>
         </div>
         <Button 
-          className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700"
+          className="bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700"
           onClick={() => {
             const email = prompt("Enter email address to invite user:");
             if (email) {
@@ -47,7 +47,7 @@ export const AdminUsersView = () => {
         <Card className="bg-white/70 backdrop-blur-sm border-white/40 shadow-lg">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 text-white">
+              <div className="p-2 rounded-full bg-gradient-to-r from-emerald-500 to-emerald-600 text-white">
                 <UsersIcon className="size-4" />
               </div>
               <div>
@@ -79,7 +79,7 @@ export const AdminUsersView = () => {
         <Card className="bg-white/70 backdrop-blur-sm border-white/40 shadow-lg">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-full bg-gradient-to-r from-purple-500 to-purple-600 text-white">
+              <div className="p-2 rounded-full bg-gradient-to-r from-teal-500 to-teal-600 text-white">
                 <VideoIcon className="size-4" />
               </div>
               <div>
@@ -273,10 +273,10 @@ const UserRow = ({ user }: UserRowProps) => {
         </p>
       </div>
       <div className="col-span-2 flex items-center gap-2">
-        <Button size="sm" variant="ghost" className="hover:bg-blue-100" title="View User">
+        <Button size="sm" variant="ghost" className="hover:bg-emerald-100" title="View User">
           <UserIcon className="size-4" />
         </Button>
-        <Button size="sm" variant="ghost" className="hover:bg-blue-100" title="Edit Subscribers" onClick={handleEditSubscribers}>
+        <Button size="sm" variant="ghost" className="hover:bg-emerald-100" title="Edit Subscribers" onClick={handleEditSubscribers}>
           Edit Subs
         </Button>
         <Button 

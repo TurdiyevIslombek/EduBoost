@@ -1,6 +1,6 @@
 "use client";
 
-import { useUser } from "@clerk/nextjs";
+import { trpc } from "@/trpc/client";
 import { AdminSidebar } from "../components/admin-sidebar";
 import { AdminNavbar } from "../components/admin-navbar";
 import { AdminErrorBoundary } from "@/components/admin-error-boundary";
@@ -12,28 +12,34 @@ interface AdminLayoutProps {
 }
 
 export const AdminLayout = ({ children }: AdminLayoutProps) => {
-  const { user, isLoaded } = useUser();
+  // Admin status is resolved server-side from the ADMIN_EMAILS allowlist.
+  // This only gates the UI; every admin procedure is still guarded by
+  // `requireAdmin` on the server.
+  const { data: isAdmin, isLoading } = trpc.admin.isAdmin.useQuery(undefined, {
+    staleTime: 5 * 60 * 1000,
+    retry: false,
+  });
 
   useEffect(() => {
-    if (isLoaded && (!user || user.emailAddresses[0]?.emailAddress !== "turdiyevislombek01@gmail.com")) {
+    if (!isLoading && !isAdmin) {
       redirect("/");
     }
-  }, [user, isLoaded]);
+  }, [isAdmin, isLoading]);
 
-  if (!isLoaded) {
+  if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-emerald-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-emerald-600"></div>
       </div>
     );
   }
 
-  if (!user || user.emailAddresses[0]?.emailAddress !== "turdiyevislombek01@gmail.com") {
+  if (!isAdmin) {
     return null;
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-emerald-50">
       <AdminNavbar />
       <div className="flex pt-16">
         <AdminSidebar />

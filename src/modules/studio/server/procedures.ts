@@ -47,7 +47,8 @@ export const studioRouter = createTRPCRouter({
         viewCount: db.$count(videoViews, eq(videoViews.videoId, videos.id)),
         viewCountAdded: videos.viewCountOverride,
         commentCount: db.$count(comments, eq(comments.videoId, videos.id)),
-        likeCount: db.$count(videoReactions, 
+        commentCountAdded: videos.commentCountOverride,
+        likeCount: db.$count(videoReactions,
           and(
             eq(videoReactions.videoId, videos.id),
             eq(videoReactions.type, "like")
@@ -82,6 +83,7 @@ export const studioRouter = createTRPCRouter({
     items.forEach((v) => {
       (v as unknown as { viewCount: number }).viewCount = (v as unknown as { viewCount: number }).viewCount + ((v as unknown as { viewCountAdded?: number }).viewCountAdded ?? 0);
       (v as unknown as { likeCount: number }).likeCount = (v as unknown as { likeCount: number }).likeCount + ((v as unknown as { likeCountAdded?: number }).likeCountAdded ?? 0);
+      (v as unknown as { commentCount: number }).commentCount = (v as unknown as { commentCount: number }).commentCount + ((v as unknown as { commentCountAdded?: number }).commentCountAdded ?? 0);
     });
 
     const lastItem = items[items.length - 1];

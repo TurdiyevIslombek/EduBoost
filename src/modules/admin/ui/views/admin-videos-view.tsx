@@ -31,6 +31,9 @@ import {
   WrenchIcon,
   RefreshCwIcon,
   CalendarClockIcon,
+  ThumbsUpIcon,
+  MessageSquareIcon,
+  ExternalLinkIcon,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -47,6 +50,7 @@ export const AdminVideosView = () => {
   const [bulkForm, setBulkForm] = useState({
     views: "",
     likes: "",
+    comments: "",
     durationDays: "7",
   });
   const utils = trpc.useContext();
@@ -134,7 +138,7 @@ export const AdminVideosView = () => {
       toast.success(data.message);
       setBulkDialogOpen(false);
       setSelectedVideos([]);
-      setBulkForm({ views: "", likes: "", durationDays: "7" });
+      setBulkForm({ views: "", likes: "", comments: "", durationDays: "7" });
       setBulkScheduleMode(false);
     },
     onError: (error) => {
@@ -147,7 +151,7 @@ export const AdminVideosView = () => {
       toast.success(data.message);
       setBulkDialogOpen(false);
       setSelectedVideos([]);
-      setBulkForm({ views: "", likes: "", durationDays: "7" });
+      setBulkForm({ views: "", likes: "", comments: "", durationDays: "7" });
       utils.admin.getAllVideos.invalidate();
     },
     onError: (error) => {
@@ -182,14 +186,16 @@ export const AdminVideosView = () => {
       // For instant update, we only send what's provided (allow 0 or empty to skip)
       // But typically "at once" means setting a value.
       // If user leaves empty, we assume they don't want to change that metric.
-      const payload: { videoIds: string[]; views?: number; likes?: number } = { 
-        videoIds: selectedVideos 
+      const targetComments = Number(bulkForm.comments);
+      const payload: { videoIds: string[]; views?: number; likes?: number; comments?: number } = {
+        videoIds: selectedVideos
       };
-      
+
       if (bulkForm.views !== "" && !isNaN(targetViews)) payload.views = targetViews;
       if (bulkForm.likes !== "" && !isNaN(targetLikes)) payload.likes = targetLikes;
+      if (bulkForm.comments !== "" && !isNaN(targetComments)) payload.comments = targetComments;
 
-      if (payload.views !== undefined || payload.likes !== undefined) {
+      if (payload.views !== undefined || payload.likes !== undefined || payload.comments !== undefined) {
         await updateMetricsBulkMutation.mutateAsync(payload);
       } else {
         setBulkDialogOpen(false);
@@ -216,7 +222,7 @@ export const AdminVideosView = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
             Video Management
           </h1>
           <p className="text-gray-600 mt-2">Manage all videos on the platform</p>
@@ -270,14 +276,14 @@ export const AdminVideosView = () => {
             <Button
               onClick={() => setBulkDialogOpen(true)}
               variant="outline"
-              className="border-blue-500 text-blue-600 hover:bg-blue-50"
+              className="border-emerald-500 text-emerald-600 hover:bg-emerald-50"
             >
               <WrenchIcon className="size-4 mr-2" />
               Schedule for {selectedVideos.length} video(s)
             </Button>
           )}
           <Link href="/studio">
-            <Button className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700">
+            <Button className="bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700">
               <VideoIcon className="size-4 mr-2" />
               Add Video
             </Button>
@@ -290,7 +296,7 @@ export const AdminVideosView = () => {
         <Card className="bg-white/70 backdrop-blur-sm border-white/40 shadow-lg">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 text-white">
+              <div className="p-2 rounded-full bg-gradient-to-r from-emerald-500 to-emerald-600 text-white">
                 <VideoIcon className="size-4" />
               </div>
               <div>
@@ -318,7 +324,7 @@ export const AdminVideosView = () => {
         <Card className="bg-white/70 backdrop-blur-sm border-white/40 shadow-lg">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-full bg-gradient-to-r from-purple-500 to-purple-600 text-white">
+              <div className="p-2 rounded-full bg-gradient-to-r from-teal-500 to-teal-600 text-white">
                 <EyeIcon className="size-4" />
               </div>
               <div>
@@ -355,21 +361,21 @@ export const AdminVideosView = () => {
         <CardContent>
           <div className="space-y-4">
             {/* Table Header */}
-            <div className="grid grid-cols-[1.25rem_2rem_minmax(0,1fr)_150px_80px_160px_120px] gap-4 p-4 bg-gray-50/80 rounded-lg font-medium text-sm text-gray-700">
+            <div className="grid grid-cols-[1.25rem_2rem_minmax(0,1fr)_140px_84px_210px_116px] gap-4 p-4 bg-emerald-50/80 rounded-lg font-medium text-sm text-gray-700">
               <div className="flex items-center">
                 <input
                   type="checkbox"
                   checked={selectedVideos.length === videos?.length && videos.length > 0}
                   onChange={toggleSelectAll}
-                  className="w-4 h-4 cursor-pointer"
+                  className="w-4 h-4 cursor-pointer accent-emerald-600"
                 />
               </div>
               <div className="flex items-center">#</div>
               <div>Video</div>
               <div>Creator</div>
               <div>Status</div>
-              <div>Views</div>
-              <div>Actions</div>
+              <div>Views · Likes · Comments</div>
+              <div className="text-right">Actions</div>
             </div>
 
             {/* Video Rows */}
@@ -450,7 +456,22 @@ export const AdminVideosView = () => {
                 />
               </div>
             </div>
-            
+
+            {!bulkScheduleMode && (
+              <div className="space-y-2">
+                <Label>Comments (Instant Override)</Label>
+                <Input
+                  type="number"
+                  value={bulkForm.comments}
+                  onChange={(e) => setBulkForm(f => ({ ...f, comments: e.target.value }))}
+                  placeholder="Leave empty to skip"
+                />
+                <p className="text-xs text-gray-500">
+                  Comment counts can only be set instantly (not gradually distributed).
+                </p>
+              </div>
+            )}
+
             {bulkScheduleMode && (
               <div className="space-y-2">
                 <Label>Distribution Duration (Days)</Label>
@@ -544,9 +565,9 @@ export const AdminVideosView = () => {
                     
                     <div className="flex items-center gap-6">
                        <div className="text-sm text-right">
-                          <div className="font-medium text-blue-600">{schedule.appliedViews} / {schedule.targetViews} Views</div>
+                          <div className="font-medium text-emerald-600">{schedule.appliedViews} / {schedule.targetViews} Views</div>
                           <div className="w-24 bg-gray-200 rounded-full h-1.5 mt-1 ml-auto">
-                            <div className="bg-blue-500 h-1.5 rounded-full" style={{ width: `${Math.min(100, (schedule.appliedViews/schedule.targetViews)*100)}%` }} />
+                            <div className="bg-emerald-500 h-1.5 rounded-full" style={{ width: `${Math.min(100, (schedule.appliedViews/schedule.targetViews)*100)}%` }} />
                           </div>
                        </div>
                        <div className="text-sm text-right">
@@ -604,6 +625,8 @@ interface VideoRowProps {
     viewCountAdded: number;
     likeCountReal?: number;
     likeCountAdded?: number;
+    commentCountReal?: number;
+    commentCountAdded?: number;
   };
   index: number;
   isSelected: boolean;
@@ -623,6 +646,7 @@ const VideoRow = ({ video, index, isSelected, onToggleSelect }: VideoRowProps) =
     categoryId: video.category?.id || "",
     views: "",
     likes: "",
+    comments: "",
     durationDays: "7",
     createdAt: video.createdAt ? new Date(video.createdAt).toISOString().slice(0, 16) : "",
   });
@@ -657,7 +681,7 @@ const VideoRow = ({ video, index, isSelected, onToggleSelect }: VideoRowProps) =
       utils.admin.getAllVideos.invalidate();
       toast.success(data.message);
       setScheduleMode(false);
-      setForm(f => ({ ...f, views: "", likes: "", durationDays: "7" }));
+      setForm(f => ({ ...f, views: "", likes: "", comments: "", durationDays: "7" }));
     },
     onError: (error) => {
       toast.error(`Failed to schedule: ${error.message}`);
@@ -734,10 +758,11 @@ const VideoRow = ({ video, index, isSelected, onToggleSelect }: VideoRowProps) =
           toast.error("Please enter valid views/likes and duration");
         }
       } else {
-        const payload: { id: string; views?: number; likes?: number } = { id: video.id };
+        const payload: { id: string; views?: number; likes?: number; comments?: number } = { id: video.id };
         if (form.views.trim() !== "" && !Number.isNaN(Number(form.views))) payload.views = Number(form.views);
         if (form.likes.trim() !== "" && !Number.isNaN(Number(form.likes))) payload.likes = Number(form.likes);
-        if (payload.views !== undefined || payload.likes !== undefined) {
+        if (form.comments.trim() !== "" && !Number.isNaN(Number(form.comments))) payload.comments = Number(form.comments);
+        if (payload.views !== undefined || payload.likes !== undefined || payload.comments !== undefined) {
           await updateMetricsMutation.mutateAsync(payload);
         } else {
           setOpen(false);
@@ -750,13 +775,13 @@ const VideoRow = ({ video, index, isSelected, onToggleSelect }: VideoRowProps) =
 
 
   return (
-    <div className="grid grid-cols-[1.25rem_2rem_minmax(0,1fr)_150px_80px_160px_120px] gap-4 p-4 border border-gray-200 rounded-lg hover:bg-gray-50/50 transition-colors">
+    <div className="grid grid-cols-[1.25rem_2rem_minmax(0,1fr)_140px_84px_210px_116px] gap-4 p-4 border border-gray-200 rounded-lg hover:bg-emerald-50/40 transition-colors">
       <div className="flex items-center justify-center">
         <input
           type="checkbox"
           checked={isSelected}
           onChange={() => onToggleSelect(video.id)}
-          className="w-4 h-4 cursor-pointer"
+          className="w-4 h-4 cursor-pointer accent-emerald-600"
         />
       </div>
       <div className="flex items-center justify-center">
@@ -798,18 +823,28 @@ const VideoRow = ({ video, index, isSelected, onToggleSelect }: VideoRowProps) =
         </Button>
       </div>
       <div className="flex items-center">
-        <p className="text-sm font-medium">
-          {video.viewCountReal + video.viewCountAdded}
-          <span className="text-xs text-gray-500 ml-2">({video.viewCountReal} + {video.viewCountAdded})</span>
-        </p>
+        <div className="flex items-center gap-3 text-sm">
+          <span className="flex items-center gap-1" title={`${video.viewCountReal} real + ${video.viewCountAdded} added`}>
+            <EyeIcon className="size-3.5 text-emerald-600" />
+            <span className="font-medium">{video.viewCountReal + video.viewCountAdded}</span>
+          </span>
+          <span className="flex items-center gap-1" title={`${video.likeCountReal ?? 0} real + ${video.likeCountAdded ?? 0} added`}>
+            <ThumbsUpIcon className="size-3.5 text-teal-600" />
+            <span className="font-medium">{(video.likeCountReal ?? 0) + (video.likeCountAdded ?? 0)}</span>
+          </span>
+          <span className="flex items-center gap-1" title={`${video.commentCountReal ?? 0} real + ${video.commentCountAdded ?? 0} added`}>
+            <MessageSquareIcon className="size-3.5 text-cyan-600" />
+            <span className="font-medium">{(video.commentCountReal ?? 0) + (video.commentCountAdded ?? 0)}</span>
+          </span>
+        </div>
       </div>
-      <div className="flex items-center gap-1 whitespace-nowrap">
-        <Button size="sm" variant="ghost" className="hover:bg-blue-100" title="Quick Edit" onClick={() => setOpen(true)}>
+      <div className="flex items-center gap-1 whitespace-nowrap justify-end">
+        <Button size="sm" variant="ghost" className="hover:bg-emerald-100" title="Quick Edit" onClick={() => setOpen(true)}>
           <EditIcon className="size-4" />
         </Button>
-        <Link href={`/videos/${video.id}`}>
-          <Button size="sm" variant="ghost" className="hover:bg-blue-100" title="Open Public Page">
-            <WrenchIcon className="size-4" />
+        <Link href={`/videos/${video.id}`} target="_blank">
+          <Button size="sm" variant="ghost" className="hover:bg-emerald-100" title="Open public page">
+            <ExternalLinkIcon className="size-4" />
           </Button>
         </Link>
         <Button
@@ -944,7 +979,7 @@ const VideoRow = ({ video, index, isSelected, onToggleSelect }: VideoRowProps) =
                             <div className="mt-1">
                               <div className="w-full bg-gray-200 rounded-full h-1.5">
                                 <div 
-                                  className="bg-blue-500 h-1.5 rounded-full" 
+                                  className="bg-emerald-500 h-1.5 rounded-full" 
                                   style={{ 
                                     width: `${((schedule.appliedViews / schedule.targetViews) * 100).toFixed(0)}%` 
                                   }}
@@ -961,12 +996,12 @@ const VideoRow = ({ video, index, isSelected, onToggleSelect }: VideoRowProps) =
                 </div>
               )}
               
-              <div className="grid grid-cols-2 gap-4">
+              <div className={`grid gap-4 ${scheduleMode ? "grid-cols-2" : "grid-cols-3"}`}>
                 <div className="space-y-2">
                   <Label htmlFor={`views-${video.id}`}>
-                    {scheduleMode ? "Target Views to Add" : "Views (instant override)"}
+                    {scheduleMode ? "Target Views to Add" : "Views"}
                   </Label>
-                  <Input id={`views-${video.id}`} inputMode="numeric" value={form.views} onChange={(e) => setForm((f) => ({ ...f, views: e.target.value }))} placeholder={scheduleMode ? "e.g. 700" : "Leave empty to skip"} />
+                  <Input id={`views-${video.id}`} inputMode="numeric" value={form.views} onChange={(e) => setForm((f) => ({ ...f, views: e.target.value }))} placeholder={scheduleMode ? "e.g. 700" : "Leave empty"} />
                   {!scheduleMode && (
                     <p className="text-xs text-gray-500">
                       Current: {video.viewCountReal + video.viewCountAdded}
@@ -975,16 +1010,32 @@ const VideoRow = ({ video, index, isSelected, onToggleSelect }: VideoRowProps) =
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor={`likes-${video.id}`}>
-                    {scheduleMode ? "Target Likes to Add" : "Likes (instant override)"}
+                    {scheduleMode ? "Target Likes to Add" : "Likes"}
                   </Label>
-                  <Input id={`likes-${video.id}`} inputMode="numeric" value={form.likes} onChange={(e) => setForm((f) => ({ ...f, likes: e.target.value }))} placeholder={scheduleMode ? "e.g. 10" : "Leave empty to skip"} />
+                  <Input id={`likes-${video.id}`} inputMode="numeric" value={form.likes} onChange={(e) => setForm((f) => ({ ...f, likes: e.target.value }))} placeholder={scheduleMode ? "e.g. 10" : "Leave empty"} />
                   {!scheduleMode && video.likeCountReal !== undefined && video.likeCountAdded !== undefined && (
                     <p className="text-xs text-gray-500">
                       Current: {video.likeCountReal + video.likeCountAdded}
                     </p>
                   )}
                 </div>
+                {!scheduleMode && (
+                  <div className="space-y-2">
+                    <Label htmlFor={`comments-${video.id}`}>Comments</Label>
+                    <Input id={`comments-${video.id}`} inputMode="numeric" value={form.comments} onChange={(e) => setForm((f) => ({ ...f, comments: e.target.value }))} placeholder="Leave empty" />
+                    {video.commentCountReal !== undefined && video.commentCountAdded !== undefined && (
+                      <p className="text-xs text-gray-500">
+                        Current: {video.commentCountReal + video.commentCountAdded}
+                      </p>
+                    )}
+                  </div>
+                )}
               </div>
+              {!scheduleMode && (
+                <p className="text-xs text-gray-500">
+                  These set the <span className="font-medium">total</span> shown publicly (instant override). Leave a field empty to keep it unchanged.
+                </p>
+              )}
 
               {scheduleMode && (
                 <div className="space-y-2">

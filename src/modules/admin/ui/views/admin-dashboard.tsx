@@ -22,7 +22,7 @@ export const AdminDashboard = () => {
     <div className="space-y-6">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+        <h1 className="text-3xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
           Admin Dashboard
         </h1>
         <p className="text-gray-600 mt-2">
@@ -37,7 +37,7 @@ export const AdminDashboard = () => {
           icon={VideoIcon}
           value={statsLoading ? "Loading..." : statsError ? "Error" : stats?.totalVideos.toString() || "0"}
           description="Published videos"
-          gradient="from-blue-500 to-blue-600"
+          gradient="from-emerald-500 to-emerald-600"
           isLoading={statsLoading}
           error={statsError}
         />
@@ -55,7 +55,7 @@ export const AdminDashboard = () => {
           icon={EyeIcon}
           value={statsLoading ? "Loading..." : statsError ? "Error" : stats?.totalViews.toString() || "0"}
           description="Video views"
-          gradient="from-purple-500 to-purple-600"
+          gradient="from-teal-500 to-teal-600"
           isLoading={statsLoading}
           error={statsError}
         />
@@ -83,7 +83,7 @@ export const AdminDashboard = () => {
             <div className="space-y-3">
               {videosLoading ? (
                 <div className="text-center text-gray-500 py-8">
-                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto mb-2"></div>
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-emerald-600 mx-auto mb-2"></div>
                   Loading recent videos...
                 </div>
               ) : videosError ? (
@@ -136,7 +136,7 @@ export const AdminDashboard = () => {
             <div className="space-y-3">
               {usersLoading ? (
                 <div className="text-center text-gray-500 py-8">
-                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto mb-2"></div>
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-emerald-600 mx-auto mb-2"></div>
                   Loading recent users...
                 </div>
               ) : usersError ? (
@@ -186,7 +186,7 @@ export const AdminDashboard = () => {
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="text-center p-4">
-              <div className="text-2xl font-bold text-blue-600 mb-2">100%</div>
+              <div className="text-2xl font-bold text-emerald-600 mb-2">100%</div>
               <div className="text-gray-600">System Health</div>
             </div>
             <div className="text-center p-4">
@@ -194,7 +194,7 @@ export const AdminDashboard = () => {
               <div className="text-gray-600">Uptime</div>
             </div>
             <div className="text-center p-4">
-              <div className="text-2xl font-bold text-purple-600 mb-2">Fast</div>
+              <div className="text-2xl font-bold text-teal-600 mb-2">Fast</div>
               <div className="text-gray-600">Performance</div>
             </div>
           </div>
@@ -223,7 +223,7 @@ const StatsCard = ({ title, icon: Icon, value, description, gradient, isLoading,
             <p className="text-sm font-medium text-gray-600">{title}</p>
             <div className="flex items-center gap-2">
               {isLoading && (
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-emerald-600"></div>
               )}
               <p className={`text-2xl font-bold ${error ? "text-red-500" : "text-gray-900"}`}>
                 {value}

@@ -24,6 +24,10 @@ export const AdminSettingsView = () => {
   const [notifUpload, setNotifUpload] = useState(true);
   const [notifSystem, setNotifSystem] = useState(true);
 
+  // Admin allowlist (read-only display; source of truth is ADMIN_EMAILS)
+  const adminEmailsQuery = trpc.admin.getAdminEmails.useQuery();
+  const adminEmails = adminEmailsQuery.data ?? [];
+
   // Maintenance banner (stored in Redis via tRPC)
   const [bannerEnabled, setBannerEnabled] = useState(false);
   const [bannerMessage, setBannerMessage] = useState("");
@@ -67,7 +71,7 @@ export const AdminSettingsView = () => {
     <div className="space-y-6">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+        <h1 className="text-3xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
           Admin Settings
         </h1>
         <p className="text-gray-600 mt-2">
@@ -139,8 +143,15 @@ export const AdminSettingsView = () => {
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="admin-email">Admin Email</Label>
-            <Input id="admin-email" defaultValue="turdiyevislombek01@gmail.com" />
+            <Label htmlFor="admin-email">Admin Email{adminEmails.length > 1 ? "s" : ""}</Label>
+            <Input
+              id="admin-email"
+              readOnly
+              value={adminEmailsQuery.isLoading ? "Loading…" : adminEmails.join(", ") || "Not configured"}
+            />
+            <p className="text-xs text-gray-500">
+              Managed via the <code className="font-mono">ADMIN_EMAILS</code> environment variable.
+            </p>
           </div>
 
           <Separator />
@@ -162,7 +173,7 @@ export const AdminSettingsView = () => {
           </div>
 
           <div className="flex justify-end">
-            <Button className="bg-gradient-to-r from-blue-500 to-purple-600">
+            <Button className="bg-gradient-to-r from-emerald-500 to-teal-600">
               Save General Settings
             </Button>
           </div>
@@ -275,7 +286,7 @@ export const AdminSettingsView = () => {
               </div>
               <div>
                 <Label className="text-sm font-medium text-gray-600">Server Uptime</Label>
-                <p className="text-lg font-semibold text-blue-600">100%</p>
+                <p className="text-lg font-semibold text-emerald-600">100%</p>
               </div>
             </div>
           </div>

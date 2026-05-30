@@ -22,7 +22,7 @@ export const AdminAnalyticsView = () => {
     return (
       <div className="space-y-6">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
             Analytics Dashboard
           </h1>
           <p className="text-gray-600 mt-2">
@@ -45,7 +45,7 @@ export const AdminAnalyticsView = () => {
     <div className="space-y-6">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+        <h1 className="text-3xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
           Analytics Dashboard
         </h1>
         <p className="text-gray-600 mt-2">
@@ -64,7 +64,7 @@ export const AdminAnalyticsView = () => {
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
             <div>
-              <div className="text-2xl font-bold text-blue-600">
+              <div className="text-2xl font-bold text-emerald-600">
                 {statsLoading ? "..." : (stats?.totalVideos || 0)}
               </div>
               <div className="text-sm text-gray-600">Total Videos</div>
@@ -76,7 +76,7 @@ export const AdminAnalyticsView = () => {
               <div className="text-sm text-gray-600">Total Users</div>
             </div>
             <div>
-              <div className="text-2xl font-bold text-purple-600">
+              <div className="text-2xl font-bold text-teal-600">
                 {statsLoading ? "..." : (stats?.totalViews || 0)}
               </div>
               <div className="text-sm text-gray-600">Total Views</div>
@@ -103,7 +103,7 @@ export const AdminAnalyticsView = () => {
                 </p>
                 <p className="text-xs text-green-600 mt-1">Real-time data</p>
               </div>
-              <div className="p-3 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg">
+              <div className="p-3 rounded-full bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow-lg">
                 <EyeIcon className="size-6" />
               </div>
             </div>
@@ -141,7 +141,7 @@ export const AdminAnalyticsView = () => {
                   {statsLoading ? "..." : `${stats?.recentUsers || 0} new this week`}
                 </p>
               </div>
-              <div className="p-3 rounded-full bg-gradient-to-r from-purple-500 to-purple-600 text-white shadow-lg">
+              <div className="p-3 rounded-full bg-gradient-to-r from-teal-500 to-teal-600 text-white shadow-lg">
                 <UsersIcon className="size-6" />
               </div>
             </div>
@@ -194,7 +194,7 @@ export const AdminAnalyticsView = () => {
                           {item.count}
                         </div>
                         <div 
-                          className="bg-gradient-to-t from-blue-500 to-blue-400 rounded-t w-8 min-h-[4px] transition-all"
+                          className="bg-gradient-to-t from-emerald-500 to-emerald-400 rounded-t w-8 min-h-[4px] transition-all"
                           style={{ height: `${height}px` }}
                         />
                         <div className="text-xs text-gray-500 transform rotate-45 whitespace-nowrap">
@@ -294,7 +294,7 @@ export const AdminAnalyticsView = () => {
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="text-center p-4">
-              <div className="text-3xl font-bold text-blue-600 mb-2">
+              <div className="text-3xl font-bold text-emerald-600 mb-2">
                 {userStatsLoading ? "..." : (userStats?.newThisWeek || 0)}
               </div>
               <div className="text-gray-600">New Users This Week</div>
@@ -308,7 +308,7 @@ export const AdminAnalyticsView = () => {
               <div className="text-xs text-gray-500 mt-1">Users with videos</div>
             </div>
             <div className="text-center p-4">
-              <div className="text-3xl font-bold text-purple-600 mb-2">
+              <div className="text-3xl font-bold text-teal-600 mb-2">
                 {videoStatsLoading ? "..." : (videoStats?.thisMonth || 0)}
               </div>
               <div className="text-gray-600">Videos This Month</div>

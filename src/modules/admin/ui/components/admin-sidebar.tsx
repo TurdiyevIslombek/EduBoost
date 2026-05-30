@@ -63,8 +63,8 @@ export const AdminSidebar = () => {
                 className={cn(
                   "flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200",
                   isActive
-                    ? "bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg transform scale-105"
-                    : "text-gray-700 hover:bg-gray-100 hover:text-blue-600 hover:scale-105"
+                    ? "bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-lg transform scale-105"
+                    : "text-gray-700 hover:bg-gray-100 hover:text-emerald-600 hover:scale-105"
                 )}
               >
                 <Icon className="size-5" />

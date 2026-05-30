@@ -400,8 +400,8 @@ const FormSectionSuspense = ({videoId}: FormSectionProps) => {
                                                         }
                                                     </Button>
                                                     {isPolling && (
-                                                        <span className="text-xs text-blue-600 animate-pulse flex items-center gap-1">
-                                                            <div className="w-2 h-2 bg-blue-600 rounded-full animate-pulse"></div>
+                                                        <span className="text-xs text-emerald-600 animate-pulse flex items-center gap-1">
+                                                            <div className="w-2 h-2 bg-emerald-600 rounded-full animate-pulse"></div>
                                                             AI processing...
                                                         </span>
                                                     )}
@@ -546,7 +546,7 @@ const FormSectionSuspense = ({videoId}: FormSectionProps) => {
                                                     <p className="text-xs text-muted-foreground">Video link</p>
                                                     <div className="flex items-center gap-x-2">
                                                         <Link prefetch  href={`/videos/${video.id}`}>
-                                                            <p className="line-clamp-1 text-sm text-blue-500    hover:underline cursor-pointer">
+                                                            <p className="line-clamp-1 text-sm text-emerald-500    hover:underline cursor-pointer">
                                                                 {fullUrl}
                                                             </p>
                                                         </Link>
@@ -562,7 +562,7 @@ const FormSectionSuspense = ({videoId}: FormSectionProps) => {
                                                     <div className="flex items-center gap-2">
                                                         <p className="text-sm">{snakeCaseToTitle(video.muxStatus || "preparing")}</p>
                                                         {video.muxStatus !== "ready" && (
-                                                            <div className="w-2 h-2 bg-blue-600 rounded-full animate-pulse"></div>
+                                                            <div className="w-2 h-2 bg-emerald-600 rounded-full animate-pulse"></div>
                                                         )}
                                                     </div>
                                                 </div>

@@ -153,6 +153,7 @@ export const videos = pgTable("videos", {
     }),
     viewCountOverride: integer("view_count_override").default(0).notNull(),
     likeCountOverride: integer("like_count_override").default(0).notNull(),
+    commentCountOverride: integer("comment_count_override").default(0).notNull(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (t) => [

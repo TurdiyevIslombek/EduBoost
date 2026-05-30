@@ -2,11 +2,16 @@
 
 import { Button } from "@/components/ui/button"
 import { ClapperboardIcon, UserCircleIcon, UserIcon, ShieldIcon } from "lucide-react"
-import { UserButton, SignInButton, SignedIn, SignedOut, useUser } from "@clerk/nextjs";
+import { UserButton, SignInButton, SignedIn, SignedOut, useAuth } from "@clerk/nextjs";
+import { trpc } from "@/trpc/client";
 
 export const AuthButton = () => {
-    const { user } = useUser();
-    const isAdmin = user?.emailAddresses?.[0]?.emailAddress === "turdiyevislombek01@gmail.com";
+    const { isSignedIn } = useAuth();
+    const { data: isAdmin } = trpc.admin.isAdmin.useQuery(undefined, {
+        enabled: !!isSignedIn,
+        staleTime: 5 * 60 * 1000,
+        retry: false,
+    });
 
     return (
         <>

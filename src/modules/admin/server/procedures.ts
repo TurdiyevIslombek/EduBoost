@@ -1,7 +1,7 @@
 import { createTRPCRouter, baseProcedure, protectedProcedure } from "@/trpc/init";
 import { db } from "@/db";
-import { videos, users, categories, videoViews, videoReactions, subscriptions, scheduledMetrics } from "@/db/schema";
-import { count, desc, eq, sql, gte, inArray } from "drizzle-orm";
+import { videos, users, categories, videoViews, videoReactions, subscriptions, scheduledMetrics, comments } from "@/db/schema";
+import { and, count, desc, eq, sql, gte, inArray } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { clerkClient } from "@clerk/nextjs/server";
 import { z } from "zod";
@@ -9,23 +9,40 @@ import { mux } from "@/lib/mux";
 import { UTApi } from "uploadthing/server";
 import { redis } from "@/lib/redis";
 
-const requireAdmin = protectedProcedure.use(async ({ ctx, next }) => {
-  const clerk = await clerkClient();
-  const clerkUser = await clerk.users.getUser(ctx.user.clerkId);
-  const userEmail = clerkUser.emailAddresses?.[0]?.emailAddress?.toLowerCase();
+// Single source of truth for who is an admin: the ADMIN_EMAILS env var
+// (comma-separated). Returns null when the var is not configured.
+const getAdminEmails = (): string[] | null => {
   const adminEmails = process.env.ADMIN_EMAILS;
-  if (!adminEmails) {
+  if (!adminEmails) return null;
+  return adminEmails
+    .split(",")
+    .map((e) => e.trim().toLowerCase())
+    .filter(Boolean);
+};
+
+// Resolves a Clerk user's primary email and checks it against the allowlist.
+// Returns a boolean (never throws for a non-admin) so it can back both the
+// `requireAdmin` security guard and the client-facing `isAdmin` UI query.
+const isClerkUserAdmin = async (clerkId: string): Promise<boolean> => {
+  const allowed = getAdminEmails();
+  if (!allowed || allowed.length === 0) return false;
+
+  const clerk = await clerkClient();
+  const clerkUser = await clerk.users.getUser(clerkId);
+  const userEmail = clerkUser.emailAddresses?.[0]?.emailAddress?.toLowerCase();
+
+  return !!userEmail && allowed.includes(userEmail);
+};
+
+const requireAdmin = protectedProcedure.use(async ({ ctx, next }) => {
+  if (!getAdminEmails()) {
     throw new TRPCError({
       code: "INTERNAL_SERVER_ERROR",
       message: "ADMIN_EMAILS environment variable is not configured",
     });
   }
-  const allowed = adminEmails
-    .split(",")
-    .map((e) => e.trim().toLowerCase())
-    .filter(Boolean);
 
-  if (!userEmail || !allowed.includes(userEmail)) {
+  if (!(await isClerkUserAdmin(ctx.user.clerkId))) {
     throw new TRPCError({
       code: "FORBIDDEN",
       message: "Admin access required",
@@ -44,6 +61,23 @@ import { processScheduledMetrics } from "@/lib/metrics-scheduler";
 import { workflow } from "@/lib/workflow";
 
 export const adminRouter = createTRPCRouter({
+  // Lightweight, non-throwing check for gating admin-only UI on the client.
+  // The real security boundary is `requireAdmin` on every admin procedure;
+  // this only decides what the UI shows.
+  isAdmin: baseProcedure.query(async ({ ctx }) => {
+    if (!ctx.clerkUserId) return false;
+    try {
+      return await isClerkUserAdmin(ctx.clerkUserId);
+    } catch {
+      return false;
+    }
+  }),
+
+  // The configured admin allowlist (read-only), for display in admin settings.
+  getAdminEmails: requireAdmin.query(() => {
+    return getAdminEmails() ?? [];
+  }),
+
   triggerScheduler: requireAdmin.mutation(async () => {
     try {
       const result = await processScheduledMetrics();
@@ -130,6 +164,8 @@ export const adminRouter = createTRPCRouter({
 
   getAllVideos: requireAdmin.query(async () => {
     try {
+      // Use scalar subqueries (not joins + groupBy) so counts can't be
+      // inflated by a cartesian product and always match the public pages.
       const videosWithCounts = await db
         .select({
           id: videos.id,
@@ -147,32 +183,20 @@ export const adminRouter = createTRPCRouter({
             id: categories.id,
             name: categories.name,
           },
-          viewCountReal: count(videoViews.videoId),
-          likeCountReal: count(sql`CASE WHEN ${videoReactions.type} = 'like' THEN 1 END`),
+          viewCountReal: db.$count(videoViews, eq(videoViews.videoId, videos.id)),
+          likeCountReal: db.$count(videoReactions, and(
+            eq(videoReactions.videoId, videos.id),
+            eq(videoReactions.type, "like"),
+          )),
+          commentCountReal: db.$count(comments, eq(comments.videoId, videos.id)),
           viewCountAdded: videos.viewCountOverride,
           likeCountAdded: videos.likeCountOverride,
+          commentCountAdded: videos.commentCountOverride,
         })
         .from(videos)
         .leftJoin(users, eq(videos.userId, users.id))
         .leftJoin(categories, eq(videos.categoryId, categories.id))
-        .leftJoin(videoViews, eq(videos.id, videoViews.videoId))
-        .leftJoin(videoReactions, eq(videos.id, videoReactions.videoId))
-        .groupBy(
-          videos.id,
-          videos.title,
-          videos.description,
-          videos.thumbnailUrl,
-          videos.visibility,
-          videos.duration,
-          videos.createdAt,
-          users.name,
-          users.imageUrl,
-          categories.id,
-          categories.name,
-          videos.viewCountOverride,
-          videos.likeCountOverride
-        )
-        .orderBy(videos.createdAt);
+        .orderBy(desc(videos.createdAt));
 
       return videosWithCounts;
     } catch {
@@ -218,14 +242,11 @@ export const adminRouter = createTRPCRouter({
           imageUrl: users.imageUrl,
           createdAt: users.createdAt,
           lastSeenAt: users.lastSeenAt,
-          videoCount: count(videos.id),
-          subscriberCountReal: count(subscriptions.creatorId),
+          videoCount: db.$count(videos, eq(videos.userId, users.id)),
+          subscriberCountReal: db.$count(subscriptions, eq(subscriptions.creatorId, users.id)),
           subscriberCountAdded: users.subscriberCountOverride,
         })
         .from(users)
-        .leftJoin(videos, eq(users.id, videos.userId))
-        .leftJoin(subscriptions, eq(users.id, subscriptions.creatorId))
-        .groupBy(users.id, users.clerkId, users.name, users.imageUrl, users.createdAt, users.subscriberCountOverride, users.lastSeenAt)
         .orderBy(desc(users.createdAt));
 
       return usersWithCounts;
@@ -420,6 +441,7 @@ export const adminRouter = createTRPCRouter({
       id: z.string(),
       views: z.number().int().nonnegative().optional(),
       likes: z.number().int().nonnegative().optional(),
+      comments: z.number().int().nonnegative().optional(),
     }))
     .mutation(async ({ input }) => {
       try {
@@ -429,6 +451,9 @@ export const adminRouter = createTRPCRouter({
         }
         if (typeof input.likes === 'number') {
           patch.likeCountOverride = input.likes;
+        }
+        if (typeof input.comments === 'number') {
+          patch.commentCountOverride = input.comments;
         }
         if (Object.keys(patch).length > 0) {
           await db.update(videos).set(patch).where(eq(videos.id, input.id));
@@ -642,6 +667,7 @@ export const adminRouter = createTRPCRouter({
       videoIds: z.array(z.string()),
       views: z.number().int().nonnegative().optional(),
       likes: z.number().int().nonnegative().optional(),
+      comments: z.number().int().nonnegative().optional(),
     }))
     .mutation(async ({ input }) => {
       try {
@@ -651,6 +677,9 @@ export const adminRouter = createTRPCRouter({
         }
         if (input.likes !== undefined) {
           patch.likeCountOverride = input.likes;
+        }
+        if (input.comments !== undefined) {
+          patch.commentCountOverride = input.comments;
         }
 
         if (Object.keys(patch).length > 0) {

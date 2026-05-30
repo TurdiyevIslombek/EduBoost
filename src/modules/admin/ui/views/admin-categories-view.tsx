@@ -29,7 +29,7 @@ export const AdminCategoriesView = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
             Category Management
           </h1>
           <p className="text-gray-600 mt-2">
@@ -37,7 +37,7 @@ export const AdminCategoriesView = () => {
           </p>
         </div>
         <Button 
-          className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700"
+          className="bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700"
           onClick={() => setShowAddForm(!showAddForm)}
         >
           <PlusIcon className="size-4 mr-2" />
@@ -54,7 +54,7 @@ export const AdminCategoriesView = () => {
               placeholder="Search categories..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 bg-white/90 backdrop-blur-sm border-white/60 focus:ring-2 focus:ring-blue-400 focus:border-blue-400 rounded-full shadow-sm transition-all duration-200"
+              className="pl-10 bg-white/90 backdrop-blur-sm border-white/60 focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400 rounded-full shadow-sm transition-all duration-200"
             />
           </div>
         </CardContent>
@@ -111,7 +111,7 @@ export const AdminCategoriesView = () => {
           <div className="flex flex-wrap gap-4">
             <Button 
               variant="outline" 
-              className="hover:bg-blue-50 hover:border-blue-300"
+              className="hover:bg-emerald-50 hover:border-emerald-300"
               onClick={() => {
                 // TODO: Implement bulk import functionality
                 alert('Bulk Import Categories - Coming soon!');
@@ -140,7 +140,7 @@ export const AdminCategoriesView = () => {
             </Button>
             <Button 
               variant="outline" 
-              className="hover:bg-purple-50 hover:border-purple-300"
+              className="hover:bg-teal-50 hover:border-teal-300"
               onClick={() => {
                 // TODO: Navigate to analytics page or show modal
                 alert('Category Analytics - Coming soon!');
@@ -322,7 +322,7 @@ const CategoryCard = ({ category, isEditing, onEdit, onEditComplete }: CategoryC
   }
 
   return (
-    <Card className="bg-white/70 backdrop-blur-sm border-white/40 shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-300 hover:border-blue-300">
+    <Card className="bg-white/70 backdrop-blur-sm border-white/40 shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-300 hover:border-emerald-300">
       <CardContent className="p-6">
         <div className="flex items-start justify-between mb-4">
           <div className="space-y-2 flex-1 min-w-0">
@@ -334,7 +334,7 @@ const CategoryCard = ({ category, isEditing, onEdit, onEditComplete }: CategoryC
               Created {formatDistanceToNow(new Date(category.createdAt), { addSuffix: true })}
             </p>
           </div>
-          <div className="p-2 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 text-white ml-4">
+          <div className="p-2 rounded-full bg-gradient-to-r from-emerald-500 to-teal-600 text-white ml-4">
             <TagIcon className="size-4" />
           </div>
         </div>
@@ -348,7 +348,7 @@ const CategoryCard = ({ category, isEditing, onEdit, onEditComplete }: CategoryC
             <Button 
               size="sm" 
               variant="ghost" 
-              className="hover:bg-blue-100"
+              className="hover:bg-emerald-100"
               onClick={onEdit}
               title="Edit Category"
             >
@@ -384,7 +384,7 @@ const CategoryCardSkeleton = () => {
             <div className="h-6 bg-gray-200 rounded w-32 animate-pulse"></div>
             <div className="h-4 bg-gray-200 rounded w-48 animate-pulse"></div>
           </div>
-          <div className="p-2 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 text-white">
+          <div className="p-2 rounded-full bg-gradient-to-r from-emerald-500 to-teal-600 text-white">
             <TagIcon className="size-4" />
           </div>
         </div>
@@ -395,7 +395,7 @@ const CategoryCardSkeleton = () => {
             <div className="h-4 bg-gray-200 rounded w-16 animate-pulse"></div>
           </div>
           <div className="flex gap-2">
-            <Button size="sm" variant="ghost" className="hover:bg-blue-100">
+            <Button size="sm" variant="ghost" className="hover:bg-emerald-100">
               <EditIcon className="size-4" />
             </Button>
             <Button size="sm" variant="ghost" className="hover:bg-red-100 text-red-600">

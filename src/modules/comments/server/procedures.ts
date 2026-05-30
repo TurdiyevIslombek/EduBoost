@@ -1,5 +1,5 @@
 import { db } from "@/db";
-import { commentReactions, comments, users } from "@/db/schema";
+import { commentReactions, comments, users, videos } from "@/db/schema";
 import { baseProcedure, createTRPCRouter, protectedProcedure } from "@/trpc/init";
 import { TRPCError } from "@trpc/server";
 import { and, count, desc, eq, getTableColumns, inArray, isNotNull, isNull, lt, or } from "drizzle-orm";
@@ -110,7 +110,7 @@ export const commentsRouter = createTRPCRouter({
                     .groupBy(comments.parentId),
             )
 
-            const [ totalData, data ] = await Promise.all([
+            const [ totalData, overrideData, data ] = await Promise.all([
                 db
                     .select({
                         count: count(),
@@ -120,6 +120,13 @@ export const commentsRouter = createTRPCRouter({
                         eq(comments.videoId, videoId),
                         // isNull(comments.parentId),
                     )),
+
+                db
+                    .select({
+                        commentCountOverride: videos.commentCountOverride,
+                    })
+                    .from(videos)
+                    .where(eq(videos.id, videoId)),
 
 
                 db
@@ -185,7 +192,7 @@ export const commentsRouter = createTRPCRouter({
 
 
             return {
-                totalCount: totalData[0].count,
+                totalCount: totalData[0].count + (overrideData[0]?.commentCountOverride ?? 0),
                 items,
                 nextCursor
             };
