@@ -64,13 +64,15 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
             type: "video.other",
             url: canonicalUrl,
             siteName: "EduBoost",
-            ...(video.thumbnailUrl && { images: [{ url: video.thumbnailUrl, width: 1280, height: 720, alt: title }] }),
+            images: video.thumbnailUrl
+                ? [{ url: video.thumbnailUrl, width: 1280, height: 720, alt: title }]
+                : [{ url: `${SITE_URL}/og-default.png`, width: 1200, height: 630, alt: "EduBoost" }],
         },
         twitter: {
             card: "summary_large_image",
             title,
             description,
-            ...(video.thumbnailUrl && { images: [video.thumbnailUrl] }),
+            images: [video.thumbnailUrl || `${SITE_URL}/og-default.png`],
         },
     };
 }
@@ -86,6 +88,7 @@ const Page = async ({ params }: PageProps) => {
             duration: videos.duration,
             createdAt: videos.createdAt,
             muxPlaybackId: videos.muxPlaybackId,
+            youtubeVideoId: videos.youtubeVideoId,
             userId: videos.userId,
             visibility: videos.visibility,
             viewCountOverride: videos.viewCountOverride,
@@ -126,7 +129,11 @@ const Page = async ({ params }: PageProps) => {
         uploadDate: video.createdAt.toISOString(),
         duration: formatIsoDuration(video.duration),
         contentUrl: canonicalUrl,
-        embedUrl: video.muxPlaybackId ? `https://stream.mux.com/${video.muxPlaybackId}` : undefined,
+        embedUrl: video.youtubeVideoId
+            ? `https://www.youtube.com/embed/${video.youtubeVideoId}`
+            : video.muxPlaybackId
+                ? `https://stream.mux.com/${video.muxPlaybackId}`
+                : undefined,
         author: video.userName
             ? {
                 "@type": "Person",

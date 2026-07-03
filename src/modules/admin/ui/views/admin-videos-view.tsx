@@ -34,17 +34,21 @@ import {
   ThumbsUpIcon,
   MessageSquareIcon,
   ExternalLinkIcon,
+  SearchIcon,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
+import { ConfirmDialog } from "../components/confirm-dialog";
 
 export const AdminVideosView = () => {
   const { data: videos, isLoading, error } = trpc.admin.getAllVideos.useQuery();
   const { data: videoStats, isLoading: statsLoading } = trpc.admin.getVideoStats.useQuery();
   const [selectedVideos, setSelectedVideos] = useState<string[]>([]);
+  const [search, setSearch] = useState("");
+  const [visibilityFilter, setVisibilityFilter] = useState<"all" | "public" | "private">("all");
   const [bulkDialogOpen, setBulkDialogOpen] = useState(false);
   const [bulkScheduleMode, setBulkScheduleMode] = useState(false);
   const [bulkForm, setBulkForm] = useState({
@@ -86,30 +90,28 @@ export const AdminVideosView = () => {
 
   const handleBulkDeleteSchedules = async () => {
     if (selectedSchedules.length === 0) return;
-    
-    if (confirm(`Are you sure you want to delete ${selectedSchedules.length} schedule(s)?`)) {
-      let successCount = 0;
-      
-      // Use Promise.all to run deletes in parallel
-      await Promise.all(selectedSchedules.map(async (id) => {
-        try {
-          // Pass empty onSuccess to prevent spamming toasts and refetches for each item
-          await deleteAllScheduleMutation.mutateAsync(
-            { scheduleId: id },
-            { onSuccess: () => {} } 
-          );
-          successCount++;
-        } catch {
-          // Individual deletion failed, continuing batch
-        }
-      }));
-      
-      if (successCount > 0) {
-        toast.success(`Deleted ${successCount} schedules`);
-        refetchAllSchedules(); // Single refetch
-        utils.admin.getScheduledMetrics.invalidate(); // Single invalidate
-        setSelectedSchedules([]);
+
+    let successCount = 0;
+
+    // Use Promise.all to run deletes in parallel
+    await Promise.all(selectedSchedules.map(async (id) => {
+      try {
+        // Pass empty onSuccess to prevent spamming toasts and refetches for each item
+        await deleteAllScheduleMutation.mutateAsync(
+          { scheduleId: id },
+          { onSuccess: () => {} }
+        );
+        successCount++;
+      } catch {
+        // Individual deletion failed, continuing batch
       }
+    }));
+
+    if (successCount > 0) {
+      toast.success(`Deleted ${successCount} schedules`);
+      refetchAllSchedules(); // Single refetch
+      utils.admin.getScheduledMetrics.invalidate(); // Single invalidate
+      setSelectedSchedules([]);
     }
   };
 
@@ -209,11 +211,26 @@ export const AdminVideosView = () => {
     );
   };
 
+  // Search matches title, creator or category; visibility narrows further.
+  const filteredVideos = useMemo(() => {
+    if (!videos) return [];
+    const q = search.trim().toLowerCase();
+    return videos.filter((v) => {
+      if (visibilityFilter !== "all" && v.visibility !== visibilityFilter) return false;
+      if (!q) return true;
+      return (
+        v.title.toLowerCase().includes(q) ||
+        (v.user?.name || "").toLowerCase().includes(q) ||
+        (v.category?.name || "").toLowerCase().includes(q)
+      );
+    });
+  }, [videos, search, visibilityFilter]);
+
   const toggleSelectAll = () => {
-    if (selectedVideos.length === videos?.length) {
+    if (selectedVideos.length === filteredVideos.length) {
       setSelectedVideos([]);
     } else {
-      setSelectedVideos(videos?.map(v => v.id) || []);
+      setSelectedVideos(filteredVideos.map(v => v.id));
     }
   };
 
@@ -228,32 +245,39 @@ export const AdminVideosView = () => {
           <p className="text-gray-600 mt-2">Manage all videos on the platform</p>
         </div>
         <div className="flex gap-2 items-center flex-wrap">
-          <Button
-            onClick={() => {
-              if (confirm("Make ALL videos public?")) {
-                setAllVisibilityMutation.mutate({ visibility: "public" });
-              }
-            }}
-            disabled={setAllVisibilityMutation.isPending}
-            variant="outline"
-            className="border-green-500 text-green-600 hover:bg-green-50"
-          >
-            <EyeIcon className="size-4 mr-2" />
-            All Public
-          </Button>
-          <Button
-            onClick={() => {
-              if (confirm("Make ALL videos private?")) {
-                setAllVisibilityMutation.mutate({ visibility: "private" });
-              }
-            }}
-            disabled={setAllVisibilityMutation.isPending}
-            variant="outline"
-            className="border-gray-500 text-gray-600 hover:bg-gray-50"
-          >
-            <EyeOffIcon className="size-4 mr-2" />
-            All Private
-          </Button>
+          <ConfirmDialog
+            title="Make ALL videos public?"
+            description="Every video on the platform becomes visible to everyone, including ones creators set to private."
+            confirmLabel="Make all public"
+            variant="default"
+            onConfirm={() => setAllVisibilityMutation.mutate({ visibility: "public" })}
+            trigger={
+              <Button
+                disabled={setAllVisibilityMutation.isPending}
+                variant="outline"
+                className="border-emerald-500 text-emerald-600 hover:bg-emerald-50"
+              >
+                <EyeIcon className="size-4 mr-2" />
+                All Public
+              </Button>
+            }
+          />
+          <ConfirmDialog
+            title="Make ALL videos private?"
+            description="Every video on the platform is hidden from viewers until made public again."
+            confirmLabel="Make all private"
+            onConfirm={() => setAllVisibilityMutation.mutate({ visibility: "private" })}
+            trigger={
+              <Button
+                disabled={setAllVisibilityMutation.isPending}
+                variant="outline"
+                className="border-gray-500 text-gray-600 hover:bg-gray-50"
+              >
+                <EyeOffIcon className="size-4 mr-2" />
+                All Private
+              </Button>
+            }
+          />
           <Button
             onClick={() => setManageSchedulesOpen(true)}
             variant="outline"
@@ -352,11 +376,44 @@ export const AdminVideosView = () => {
 
       {/* Videos Table */}
       <Card className="bg-white/70 backdrop-blur-sm border-white/40 shadow-lg">
-        <CardHeader>
+        <CardHeader className="flex flex-col xl:flex-row xl:items-center justify-between gap-3 space-y-0">
           <CardTitle className="flex items-center gap-2">
-            <VideoIcon className="size-5" />
+            <VideoIcon className="size-5 text-emerald-600" />
             All Videos
+            {videos && (
+              <span className="text-sm font-normal text-gray-500">
+                ({filteredVideos.length}{filteredVideos.length !== videos.length ? ` of ${videos.length}` : ""})
+              </span>
+            )}
           </CardTitle>
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="relative w-full sm:w-72">
+              <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-gray-400" />
+              <Input
+                placeholder="Search title, creator, category…"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="pl-9 rounded-full bg-white/90"
+              />
+            </div>
+            <div className="flex rounded-full border border-emerald-200 p-0.5 bg-white/80">
+              {(["all", "public", "private"] as const).map((f) => (
+                <Button
+                  key={f}
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => setVisibilityFilter(f)}
+                  className={`rounded-full h-7 px-3 text-xs capitalize ${
+                    visibilityFilter === f
+                      ? "bg-gradient-to-r from-emerald-500 to-teal-600 text-white hover:text-white"
+                      : "text-gray-500 hover:text-emerald-700"
+                  }`}
+                >
+                  {f}
+                </Button>
+              ))}
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
@@ -365,7 +422,7 @@ export const AdminVideosView = () => {
               <div className="flex items-center">
                 <input
                   type="checkbox"
-                  checked={selectedVideos.length === videos?.length && videos.length > 0}
+                  checked={selectedVideos.length === filteredVideos.length && filteredVideos.length > 0}
                   onChange={toggleSelectAll}
                   className="w-4 h-4 cursor-pointer accent-emerald-600"
                 />
@@ -390,10 +447,10 @@ export const AdminVideosView = () => {
                 <p>Error loading videos</p>
                 <p className="text-sm text-gray-500">{error.message}</p>
               </div>
-            ) : videos && videos.length > 0 ? (
-              videos.map((video, index) => (
-                <VideoRow 
-                  key={video.id} 
+            ) : filteredVideos.length > 0 ? (
+              filteredVideos.map((video, index) => (
+                <VideoRow
+                  key={video.id}
                   video={video}
                   index={index + 1}
                   isSelected={selectedVideos.includes(video.id)}
@@ -403,7 +460,7 @@ export const AdminVideosView = () => {
             ) : (
               <div className="text-center text-gray-500 py-8">
                 <VideoIcon className="size-12 mx-auto mb-4 text-gray-400" />
-                <p>No videos found</p>
+                <p>{search || visibilityFilter !== "all" ? "No videos match your filters" : "No videos found"}</p>
               </div>
             )}
           </div>
@@ -508,14 +565,18 @@ export const AdminVideosView = () => {
             <DialogTitle className="flex justify-between items-center pr-8">
               <span>Active Metric Schedules</span>
               {selectedSchedules.length > 0 && (
-                <Button 
-                  variant="destructive" 
-                  size="sm" 
-                  onClick={handleBulkDeleteSchedules}
-                >
-                  <TrashIcon className="size-4 mr-2" />
-                  Delete Selected ({selectedSchedules.length})
-                </Button>
+                <ConfirmDialog
+                  title={`Delete ${selectedSchedules.length} schedule(s)?`}
+                  description="The selected metric schedules stop immediately. Views and likes already applied are kept."
+                  confirmLabel="Delete schedules"
+                  onConfirm={handleBulkDeleteSchedules}
+                  trigger={
+                    <Button variant="destructive" size="sm">
+                      <TrashIcon className="size-4 mr-2" />
+                      Delete Selected ({selectedSchedules.length})
+                    </Button>
+                  }
+                />
               )}
             </DialogTitle>
           </DialogHeader>
@@ -577,18 +638,21 @@ export const AdminVideosView = () => {
                           </div>
                        </div>
                        
-                       <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                          onClick={() => {
-                            if(confirm("Are you sure you want to delete this schedule?")) {
-                              deleteAllScheduleMutation.mutate({ scheduleId: schedule.id });
-                            }
-                          }}
-                       >
-                         <TrashIcon className="size-4" />
-                       </Button>
+                       <ConfirmDialog
+                          title="Delete this schedule?"
+                          description={`Stops the gradual metrics for "${schedule.video.title}". Already-applied views and likes are kept.`}
+                          confirmLabel="Delete schedule"
+                          onConfirm={() => deleteAllScheduleMutation.mutate({ scheduleId: schedule.id })}
+                          trigger={
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                            >
+                              <TrashIcon className="size-4" />
+                            </Button>
+                          }
+                       />
                     </div>
                   </div>
                 ))}
@@ -712,12 +776,11 @@ const VideoRow = ({ video, index, isSelected, onToggleSelect }: VideoRowProps) =
   };
 
   const handleDeleteVideo = async () => {
-    if (window.confirm(`Are you sure you want to delete video "${video.title}"? This action cannot be undone.`)) {
-      try {
-        await deleteVideoMutation.mutateAsync({ id: video.id });
-      } catch {
-        alert("Failed to delete video. Check console for details.");
-      }
+    try {
+      await deleteVideoMutation.mutateAsync({ id: video.id });
+      toast.success(`Deleted "${video.title}"`);
+    } catch {
+      toast.error("Failed to delete video");
     }
   };
 
@@ -725,8 +788,9 @@ const VideoRow = ({ video, index, isSelected, onToggleSelect }: VideoRowProps) =
     const newVisibility = video.visibility === "public" ? "private" : "public";
     try {
       await toggleVisibilityMutation.mutateAsync({ id: video.id, visibility: newVisibility as "public" | "private" });
+      toast.success(`"${video.title}" is now ${newVisibility}`);
     } catch {
-      alert("Failed to toggle visibility. Check console for details.");
+      toast.error("Failed to toggle visibility");
     }
   };
 
@@ -847,20 +911,27 @@ const VideoRow = ({ video, index, isSelected, onToggleSelect }: VideoRowProps) =
             <ExternalLinkIcon className="size-4" />
           </Button>
         </Link>
-        <Button
-          size="sm"
-          variant="ghost"
-          className="hover:bg-red-100 text-red-600"
-          onClick={handleDeleteVideo}
-          disabled={deleteVideoMutation.isPending}
-          title="Delete Video"
-        >
-          {deleteVideoMutation.isPending ? (
-            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-600" />
-          ) : (
-            <TrashIcon className="size-4" />
-          )}
-        </Button>
+        <ConfirmDialog
+          title={`Delete "${video.title}"?`}
+          description="Removes the video, its Mux asset, thumbnail, views, comments and reactions permanently. This cannot be undone."
+          confirmLabel="Delete video"
+          onConfirm={handleDeleteVideo}
+          trigger={
+            <Button
+              size="sm"
+              variant="ghost"
+              className="hover:bg-red-100 text-red-600"
+              disabled={deleteVideoMutation.isPending}
+              title="Delete Video"
+            >
+              {deleteVideoMutation.isPending ? (
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-600" />
+              ) : (
+                <TrashIcon className="size-4" />
+              )}
+            </Button>
+          }
+        />
       </div>
 
       <Dialog open={open} onOpenChange={setOpen}>
@@ -949,17 +1020,20 @@ const VideoRow = ({ video, index, isSelected, onToggleSelect }: VideoRowProps) =
                     <div className="space-y-2">
                       {scheduledMetrics.map((schedule) => (
                         <div key={schedule.id} className="text-xs bg-white p-2 rounded border relative">
-                          <button
-                            onClick={() => {
-                              if (window.confirm("Delete this schedule?")) {
-                                deleteScheduleMutation.mutate({ scheduleId: schedule.id });
-                              }
-                            }}
-                            className="absolute top-1 right-1 text-red-500 hover:text-red-700 p-1"
-                            title="Delete schedule"
-                          >
-                            <TrashIcon className="size-3" />
-                          </button>
+                          <ConfirmDialog
+                            title="Delete this schedule?"
+                            description="Stops the gradual metric distribution. Already-applied views and likes are kept."
+                            confirmLabel="Delete schedule"
+                            onConfirm={() => deleteScheduleMutation.mutate({ scheduleId: schedule.id })}
+                            trigger={
+                              <button
+                                className="absolute top-1 right-1 text-red-500 hover:text-red-700 p-1"
+                                title="Delete schedule"
+                              >
+                                <TrashIcon className="size-3" />
+                              </button>
+                            }
+                          />
                           <div className="flex justify-between pr-6">
                             <span className={schedule.isActive ? "text-green-600 font-medium" : "text-gray-400"}>
                               {schedule.isActive ? "🟢 Active" : "⚪ Completed"}
@@ -1067,24 +1141,30 @@ const VideoRow = ({ video, index, isSelected, onToggleSelect }: VideoRowProps) =
 
 const VideoRowSkeleton = () => {
   return (
-    <div className="grid grid-cols-12 gap-4 p-4 border border-gray-200 rounded-lg hover:bg-gray-50/50 transition-colors">
-      <div className="col-span-4 flex items-center gap-3">
-        <div className="w-16 h-12 bg-gray-200 rounded animate-pulse" />
-        <div className="space-y-1">
-          <div className="h-4 bg-gray-200 rounded w-48 animate-pulse" />
-          <div className="h-3 bg-gray-200 rounded w-32 animate-pulse" />
+    <div className="grid grid-cols-[1.25rem_2rem_minmax(0,1fr)_140px_84px_210px_116px] gap-4 p-4 border border-gray-200 rounded-lg">
+      <div className="flex items-center justify-center">
+        <div className="w-4 h-4 bg-gray-200 rounded animate-pulse" />
+      </div>
+      <div className="flex items-center justify-center">
+        <div className="w-4 h-4 bg-gray-100 rounded animate-pulse" />
+      </div>
+      <div className="flex items-center gap-3">
+        <div className="w-16 h-12 bg-gray-200 rounded-lg animate-pulse shrink-0" />
+        <div className="space-y-1 flex-1">
+          <div className="h-4 bg-gray-200 rounded w-2/3 animate-pulse" />
+          <div className="h-3 bg-gray-100 rounded w-1/3 animate-pulse" />
         </div>
       </div>
-      <div className="col-span-2 flex items-center">
-        <div className="h-4 bg-gray-200 rounded w-24 animate-pulse" />
+      <div className="flex items-center">
+        <div className="h-4 bg-gray-200 rounded w-20 animate-pulse" />
       </div>
-      <div className="col-span-2 flex items-center">
-        <div className="h-6 bg-gray-200 rounded-full w-16 animate-pulse" />
+      <div className="flex items-center">
+        <div className="h-6 bg-gray-200 rounded-full w-14 animate-pulse" />
       </div>
-      <div className="col-span-2 flex items-center">
-        <div className="h-4 bg-gray-200 rounded w-16 animate-pulse" />
+      <div className="flex items-center">
+        <div className="h-4 bg-gray-200 rounded w-32 animate-pulse" />
       </div>
-      <div className="col-span-2 flex items-center gap-2">
+      <div className="flex items-center justify-end gap-2">
         <div className="h-8 bg-gray-200 rounded w-8 animate-pulse" />
         <div className="h-8 bg-gray-200 rounded w-8 animate-pulse" />
       </div>

@@ -10,6 +10,7 @@ const nextConfig: NextConfig = {
       "lucide-react",
       "@radix-ui/react-icons",
       "date-fns",
+      "recharts",
       "@radix-ui/react-dialog",
       "@radix-ui/react-dropdown-menu",
       "@radix-ui/react-popover",
@@ -44,6 +45,15 @@ const nextConfig: NextConfig = {
       {
         protocol: "https",
         hostname: "**.clerk.com",
+      },
+      {
+        // YouTube video thumbnails (for videos added via a YouTube link)
+        protocol: "https",
+        hostname: "i.ytimg.com",
+      },
+      {
+        protocol: "https",
+        hostname: "img.youtube.com",
       },
     ],
     dangerouslyAllowSVG: true,

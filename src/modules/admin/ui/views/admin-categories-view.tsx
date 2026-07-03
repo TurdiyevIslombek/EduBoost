@@ -5,17 +5,31 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-
-import { 
-  TagIcon, 
-  PlusIcon, 
-  EditIcon, 
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  TagIcon,
+  PlusIcon,
+  EditIcon,
   TrashIcon,
   SearchIcon,
-  VideoIcon
+  VideoIcon,
+  UploadIcon,
+  DownloadIcon,
+  BarChart3Icon,
 } from "lucide-react";
 import { useState } from "react";
 import { formatDistanceToNow } from "date-fns";
+import { toast } from "sonner";
+import Link from "next/link";
+import { ConfirmDialog } from "../components/confirm-dialog";
 
 export const AdminCategoriesView = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -108,50 +122,131 @@ export const AdminCategoriesView = () => {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-wrap gap-4">
-            <Button 
-              variant="outline" 
+          <div className="flex flex-wrap gap-3">
+            <BulkImportDialog />
+            <Button
+              variant="outline"
               className="hover:bg-emerald-50 hover:border-emerald-300"
               onClick={() => {
-                // TODO: Implement bulk import functionality
-                alert('Bulk Import Categories - Coming soon!');
-              }}
-            >
-              Bulk Import Categories
-            </Button>
-            <Button 
-              variant="outline" 
-              className="hover:bg-green-50 hover:border-green-300"
-              onClick={() => {
                 if (!categories || categories.length === 0) {
-                  alert('No categories to export');
+                  toast.error("No categories to export");
                   return;
                 }
-                const dataStr = JSON.stringify(categories, null, 2);
+                const exportData = categories.map(({ name, description }) => ({ name, description }));
+                const dataStr = JSON.stringify(exportData, null, 2);
                 const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
                 const exportFileDefaultName = `categories-${new Date().toISOString().split('T')[0]}.json`;
                 const linkElement = document.createElement('a');
                 linkElement.setAttribute('href', dataUri);
                 linkElement.setAttribute('download', exportFileDefaultName);
                 linkElement.click();
+                toast.success(`Exported ${categories.length} categories`);
               }}
             >
+              <DownloadIcon className="size-4 mr-2" />
               Export Categories
             </Button>
-            <Button 
-              variant="outline" 
-              className="hover:bg-teal-50 hover:border-teal-300"
-              onClick={() => {
-                // TODO: Navigate to analytics page or show modal
-                alert('Category Analytics - Coming soon!');
-              }}
-            >
-              Category Analytics
-            </Button>
+            <Link href="/admin/analytics">
+              <Button variant="outline" className="hover:bg-teal-50 hover:border-teal-300">
+                <BarChart3Icon className="size-4 mr-2" />
+                View Analytics
+              </Button>
+            </Link>
           </div>
         </CardContent>
       </Card>
     </div>
+  );
+};
+
+// Bulk-imports categories from a JSON array of { name, description? }.
+// The format matches what "Export Categories" produces.
+const BulkImportDialog = () => {
+  const [open, setOpen] = useState(false);
+  const [jsonText, setJsonText] = useState("");
+  const utils = trpc.useUtils();
+
+  const bulkMutation = trpc.admin.createCategoriesBulk.useMutation({
+    onSuccess: (data) => {
+      toast.success(`Imported ${data.created} categories${data.skipped ? ` (${data.skipped} already existed)` : ""}`);
+      utils.admin.getAllCategories.invalidate();
+      setOpen(false);
+      setJsonText("");
+    },
+    onError: (err) => toast.error(err.message),
+  });
+
+  const handleImport = () => {
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(jsonText);
+    } catch {
+      toast.error("Invalid JSON — expected an array like [{\"name\": \"Math\"}]");
+      return;
+    }
+
+    if (!Array.isArray(parsed) || parsed.length === 0) {
+      toast.error("Expected a non-empty JSON array of categories");
+      return;
+    }
+
+    const items = parsed
+      .filter((c): c is { name: string; description?: string } =>
+        !!c && typeof c === "object" && typeof (c as { name?: unknown }).name === "string" && !!(c as { name: string }).name.trim()
+      )
+      .map((c) => ({
+        name: c.name.trim().slice(0, 100),
+        description: typeof c.description === "string" ? c.description.slice(0, 500) : undefined,
+      }));
+
+    if (items.length === 0) {
+      toast.error("No valid entries found — each item needs a \"name\"");
+      return;
+    }
+
+    bulkMutation.mutate({ categories: items.slice(0, 100) });
+  };
+
+  return (
+    <>
+      <Button
+        variant="outline"
+        className="hover:bg-emerald-50 hover:border-emerald-300"
+        onClick={() => setOpen(true)}
+      >
+        <UploadIcon className="size-4 mr-2" />
+        Bulk Import
+      </Button>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Bulk Import Categories</DialogTitle>
+            <DialogDescription>
+              Paste a JSON array. Existing names are skipped automatically.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Textarea
+              rows={8}
+              value={jsonText}
+              onChange={(e) => setJsonText(e.target.value)}
+              placeholder={`[\n  { "name": "Mathematics", "description": "Algebra, calculus…" },\n  { "name": "Programming" }\n]`}
+              className="font-mono text-xs"
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+            <Button
+              onClick={handleImport}
+              disabled={bulkMutation.isPending || !jsonText.trim()}
+              className="bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700"
+            >
+              {bulkMutation.isPending ? "Importing…" : "Import"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 };
 
@@ -278,14 +373,8 @@ const CategoryCard = ({ category, isEditing, onEdit, onEditComplete }: CategoryC
     }
   };
 
-  const handleDelete = async () => {
-    if (window.confirm(`Are you sure you want to delete "${category.name}"? This will remove the category from ${category.videoCount} videos.`)) {
-      try {
-        await deleteMutation.mutateAsync({ id: category.id });
-      } catch {
-        // Mutation error handled by tRPC
-      }
-    }
+  const handleDelete = () => {
+    deleteMutation.mutate({ id: category.id });
   };
 
   if (isEditing) {
@@ -354,20 +443,27 @@ const CategoryCard = ({ category, isEditing, onEdit, onEditComplete }: CategoryC
             >
               <EditIcon className="size-4" />
             </Button>
-            <Button 
-              size="sm" 
-              variant="ghost" 
-              className="hover:bg-red-100 text-red-600"
-              onClick={handleDelete}
-              disabled={deleteMutation.isPending}
-              title="Delete Category"
-            >
-              {deleteMutation.isPending ? (
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-600"></div>
-              ) : (
-                <TrashIcon className="size-4" />
-              )}
-            </Button>
+            <ConfirmDialog
+              title={`Delete "${category.name}"?`}
+              description={`The category will be removed from ${category.videoCount} video(s); the videos themselves are kept.`}
+              confirmLabel="Delete category"
+              onConfirm={handleDelete}
+              trigger={
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="hover:bg-red-100 text-red-600"
+                  disabled={deleteMutation.isPending}
+                  title="Delete Category"
+                >
+                  {deleteMutation.isPending ? (
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-600"></div>
+                  ) : (
+                    <TrashIcon className="size-4" />
+                  )}
+                </Button>
+              }
+            />
           </div>
         </div>
       </CardContent>

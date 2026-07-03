@@ -9,30 +9,8 @@ import { mux } from "@/lib/mux";
 import { UTApi } from "uploadthing/server";
 import { redis } from "@/lib/redis";
 
-// Single source of truth for who is an admin: the ADMIN_EMAILS env var
-// (comma-separated). Returns null when the var is not configured.
-const getAdminEmails = (): string[] | null => {
-  const adminEmails = process.env.ADMIN_EMAILS;
-  if (!adminEmails) return null;
-  return adminEmails
-    .split(",")
-    .map((e) => e.trim().toLowerCase())
-    .filter(Boolean);
-};
-
-// Resolves a Clerk user's primary email and checks it against the allowlist.
-// Returns a boolean (never throws for a non-admin) so it can back both the
-// `requireAdmin` security guard and the client-facing `isAdmin` UI query.
-const isClerkUserAdmin = async (clerkId: string): Promise<boolean> => {
-  const allowed = getAdminEmails();
-  if (!allowed || allowed.length === 0) return false;
-
-  const clerk = await clerkClient();
-  const clerkUser = await clerk.users.getUser(clerkId);
-  const userEmail = clerkUser.emailAddresses?.[0]?.emailAddress?.toLowerCase();
-
-  return !!userEmail && allowed.includes(userEmail);
-};
+// Shared server-only allowlist logic (also used by the /admin layout gate).
+import { getAdminEmails, isClerkUserAdmin } from "@/lib/admin";
 
 const requireAdmin = protectedProcedure.use(async ({ ctx, next }) => {
   if (!getAdminEmails()) {
@@ -100,17 +78,25 @@ export const adminRouter = createTRPCRouter({
         totalVideos,
         totalUsers,
         totalCategories,
-        totalViews,
+        totalRealViews,
+        totalOverrideViews,
         publicVideos,
         recentUsers,
+        totalComments,
+        viewsThisWeek,
       ] = await Promise.all([
         db.select({ count: count() }).from(videos),
         db.select({ count: count() }).from(users),
         db.select({ count: count() }).from(categories),
         db.select({ count: count() }).from(videoViews),
+        db.select({ total: sql<number>`COALESCE(SUM(${videos.viewCountOverride}), 0)::int` }).from(videos),
         db.select({ count: count() }).from(videos).where(eq(videos.visibility, "public")),
         db.select({ count: count() }).from(users).where(
           gte(users.createdAt, new Date(Date.now() - 7 * 24 * 60 * 60 * 1000))
+        ),
+        db.select({ count: count() }).from(comments),
+        db.select({ count: count() }).from(videoViews).where(
+          gte(videoViews.createdAt, new Date(Date.now() - 7 * 24 * 60 * 60 * 1000))
         ),
       ]);
 
@@ -118,9 +104,13 @@ export const adminRouter = createTRPCRouter({
         totalVideos: totalVideos[0]?.count || 0,
         totalUsers: totalUsers[0]?.count || 0,
         totalCategories: totalCategories[0]?.count || 0,
-        totalViews: totalViews[0]?.count || 0,
+        // Displayed views everywhere = real views + admin override.
+        totalViews: (totalRealViews[0]?.count || 0) + (totalOverrideViews[0]?.total || 0),
+        realViews: totalRealViews[0]?.count || 0,
         publicVideos: publicVideos[0]?.count || 0,
         recentUsers: recentUsers[0]?.count || 0,
+        totalComments: totalComments[0]?.count || 0,
+        viewsThisWeek: viewsThisWeek[0]?.count || 0,
       };
     } catch {
       throw new TRPCError({
@@ -508,6 +498,7 @@ export const adminRouter = createTRPCRouter({
           isActive: true,
         }).returning();
 
+        let workflowTriggered = true;
         try {
             let intervalMinutes = 60;
             if (input.durationDays < 1) intervalMinutes = 15;
@@ -522,10 +513,16 @@ export const adminRouter = createTRPCRouter({
                 retries: 3
             });
         } catch {
-            // Workflow trigger failed, cron fallback will handle it
+            // The daily cron fallback will still apply it, just in coarser steps.
+            workflowTriggered = false;
         }
 
-        return { success: true, message: `Scheduled ${input.targetViews} views and ${input.targetLikes} likes over ${input.durationDays} days` };
+        return {
+          success: true,
+          workflowTriggered,
+          message: `Scheduled ${input.targetViews} views and ${input.targetLikes} likes over ${input.durationDays} days` +
+            (workflowTriggered ? "" : " — live workflow trigger failed, the daily cron will apply it instead"),
+        };
       } catch (error) {
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
@@ -632,27 +629,26 @@ export const adminRouter = createTRPCRouter({
 
         const insertedSchedules = await db.insert(scheduledMetrics).values(values).returning();
 
-        try {
-          const intervalMinutes = input.durationDays < 1 ? 15 : (input.durationDays <= 3 ? 30 : 60);
-          const baseUrl = process.env.UPSTASH_WORKFLOW_URL || process.env.NEXT_PUBLIC_APP_URL || "https://edu-boost.vercel.app";
+        const intervalMinutes = input.durationDays < 1 ? 15 : (input.durationDays <= 3 ? 30 : 60);
+        const baseUrl = process.env.UPSTASH_WORKFLOW_URL || process.env.NEXT_PUBLIC_APP_URL || "https://edu-boost.vercel.app";
 
-          await Promise.allSettled(insertedSchedules.map(schedule =>
-             workflow.trigger({
-                url: `${baseUrl}/api/workflows/distribute-metrics`,
-                body: {
-                    scheduleId: schedule.id,
-                    intervalMinutes
-                },
-                retries: 3
-            })
-          ));
-        } catch {
-          // Workflow triggers failed, cron fallback will handle it
-        }
+        const triggerResults = await Promise.allSettled(insertedSchedules.map(schedule =>
+           workflow.trigger({
+              url: `${baseUrl}/api/workflows/distribute-metrics`,
+              body: {
+                  scheduleId: schedule.id,
+                  intervalMinutes
+              },
+              retries: 3
+          })
+        ));
+        const failedTriggers = triggerResults.filter((r) => r.status === "rejected").length;
 
         return {
           success: true,
-          message: `Scheduled ${input.targetViews} views and ${input.targetLikes} likes for ${input.videoIds.length} video(s) over ${input.durationDays} days`
+          workflowTriggered: failedTriggers === 0,
+          message: `Scheduled ${input.targetViews} views and ${input.targetLikes} likes for ${input.videoIds.length} video(s) over ${input.durationDays} days` +
+            (failedTriggers === 0 ? "" : ` — ${failedTriggers} live workflow trigger(s) failed, the daily cron will apply those instead`),
         };
       } catch (error) {
         throw new TRPCError({
@@ -851,7 +847,7 @@ export const adminRouter = createTRPCRouter({
 
   getViewsOverTime: requireAdmin
     .input(z.object({
-      days: z.number().default(7)
+      days: z.number().int().min(1).max(90).default(7)
     }))
     .query(async ({ input }) => {
       try {
@@ -888,6 +884,164 @@ export const adminRouter = createTRPCRouter({
           message: "Failed to get views over time",
         });
       }
+    }),
+
+  // ---- User invitations (Clerk) ----
+
+  inviteUser: requireAdmin
+    .input(z.object({ email: z.string().email().max(320) }))
+    .mutation(async ({ input }) => {
+      try {
+        const clerk = await clerkClient();
+        await clerk.invitations.createInvitation({
+          emailAddress: input.email,
+          notify: true,
+          ignoreExisting: true,
+        });
+        return { success: true, message: `Invitation sent to ${input.email}` };
+      } catch (error) {
+        const message =
+          error && typeof error === "object" && "errors" in error
+            ? (error as { errors?: { message?: string }[] }).errors?.[0]?.message
+            : undefined;
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: message || "Failed to send invitation",
+        });
+      }
+    }),
+
+  // ---- Comment moderation ----
+
+  getRecentComments: requireAdmin
+    .input(z.object({
+      search: z.string().max(200).optional(),
+      limit: z.number().int().min(1).max(200).default(50),
+    }))
+    .query(async ({ input }) => {
+      const searchFilter = input.search
+        ? sql`LOWER(${comments.value}) LIKE LOWER(${"%" + input.search + "%"})`
+        : undefined;
+
+      return await db
+        .select({
+          id: comments.id,
+          value: comments.value,
+          createdAt: comments.createdAt,
+          parentId: comments.parentId,
+          user: {
+            id: users.id,
+            name: users.name,
+            imageUrl: users.imageUrl,
+          },
+          video: {
+            id: videos.id,
+            title: videos.title,
+            thumbnailUrl: videos.thumbnailUrl,
+          },
+        })
+        .from(comments)
+        .innerJoin(users, eq(comments.userId, users.id))
+        .innerJoin(videos, eq(comments.videoId, videos.id))
+        .where(searchFilter)
+        .orderBy(desc(comments.createdAt))
+        .limit(input.limit);
+    }),
+
+  deleteComment: requireAdmin
+    .input(z.object({ id: z.string().uuid() }))
+    .mutation(async ({ input }) => {
+      // Replies cascade via the parent_id FK.
+      await db.delete(comments).where(eq(comments.id, input.id));
+      return { success: true };
+    }),
+
+  // ---- Analytics extras ----
+
+  getTopVideos: requireAdmin
+    .input(z.object({ limit: z.number().int().min(1).max(50).default(10) }))
+    .query(async ({ input }) => {
+      const rows = await db
+        .select({
+          id: videos.id,
+          title: videos.title,
+          thumbnailUrl: videos.thumbnailUrl,
+          visibility: videos.visibility,
+          userName: users.name,
+          viewCountReal: db.$count(videoViews, eq(videoViews.videoId, videos.id)),
+          viewCountAdded: videos.viewCountOverride,
+          likeCountReal: db.$count(videoReactions, and(
+            eq(videoReactions.videoId, videos.id),
+            eq(videoReactions.type, "like"),
+          )),
+          likeCountAdded: videos.likeCountOverride,
+        })
+        .from(videos)
+        .leftJoin(users, eq(videos.userId, users.id));
+
+      return rows
+        .map((v) => ({
+          ...v,
+          totalViews: v.viewCountReal + v.viewCountAdded,
+          totalLikes: v.likeCountReal + v.likeCountAdded,
+        }))
+        .sort((a, b) => b.totalViews - a.totalViews)
+        .slice(0, input.limit);
+    }),
+
+  // ---- System status (real checks, not decorative numbers) ----
+
+  getSystemStatus: requireAdmin.query(async () => {
+    const [dbStatus, redisStatus] = await Promise.all([
+      db.execute(sql`select 1`).then(() => true).catch(() => false),
+      redis.ping().then(() => true).catch(() => false),
+    ]);
+
+    const activeSchedules = await db
+      .select({ count: count() })
+      .from(scheduledMetrics)
+      .where(eq(scheduledMetrics.isActive, true))
+      .then((r) => r[0]?.count || 0)
+      .catch(() => 0);
+
+    return {
+      db: dbStatus,
+      redis: redisStatus,
+      // Presence of credentials only — never the values themselves.
+      services: {
+        clerk: !!process.env.CLERK_SECRET_KEY,
+        mux: !!process.env.MUX_TOKEN_ID && !!process.env.MUX_TOKEN_SECRET,
+        uploadthing: !!process.env.UPLOADTHING_TOKEN,
+        qstash: !!process.env.QSTASH_TOKEN,
+        cronSecret: !!process.env.CRON_SECRET,
+        adminEmails: (getAdminEmails() ?? []).length,
+      },
+      activeSchedules,
+      timestamp: new Date().toISOString(),
+    };
+  }),
+
+  // ---- Bulk category import ----
+
+  createCategoriesBulk: requireAdmin
+    .input(z.object({
+      categories: z.array(z.object({
+        name: z.string().min(1).max(100),
+        description: z.string().max(500).optional(),
+      })).min(1).max(100),
+    }))
+    .mutation(async ({ input }) => {
+      const inserted = await db
+        .insert(categories)
+        .values(input.categories)
+        .onConflictDoNothing({ target: categories.name })
+        .returning({ id: categories.id });
+
+      return {
+        success: true,
+        created: inserted.length,
+        skipped: input.categories.length - inserted.length,
+      };
     }),
 
   getMaintenanceBanner: baseProcedure.query(async () => {

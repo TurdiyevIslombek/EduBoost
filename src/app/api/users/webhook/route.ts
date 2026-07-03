@@ -85,10 +85,10 @@ import { users } from '@/db/schema'
 import { eq } from 'drizzle-orm'
 
 export async function POST(req: Request) {
-    // 1. Ensure signing secret is available
-    const SIGNING_SECRET = process.env.CLERK_SIGNING_SECRET
+    // 1. Ensure signing secret is available (either env name works)
+    const SIGNING_SECRET = process.env.CLERK_SIGNING_SECRET || process.env.CLERK_WEBHOOK_SECRET
     if (!SIGNING_SECRET) {
-        throw new Error('Error: Missing CLERK_SIGNING_SECRET in .env')
+        return new Response('Webhook secret not configured', { status: 500 })
     }
 
     // 2. Initialize webhook verifier

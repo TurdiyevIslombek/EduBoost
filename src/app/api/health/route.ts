@@ -16,14 +16,15 @@ export async function GET(req: NextRequest) {
     checks: {},
   };
 
-  // DB check
+  // DB check — never echo raw driver errors (they can contain host names
+  // and connection details).
   try {
     await db.execute(sql`select 1`);
     result.checks.db = { ok: true };
-  } catch (e) {
+  } catch {
     result.ok = false;
     result.status = "degraded";
-    result.checks.db = { ok: false, error: e instanceof Error ? e.message : String(e) };
+    result.checks.db = { ok: false, error: "database unreachable" };
   }
 
   return Response.json(result, { status: result.ok ? 200 : 503 });

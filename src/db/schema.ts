@@ -132,6 +132,10 @@ export const videos = pgTable("videos", {
     id: uuid("id").primaryKey().defaultRandom(),
     title: text("title").notNull(),
     description: text("description"),
+    // Where the playable video comes from: "mux" (uploaded/transcoded) or
+    // "youtube" (embedded via the official iframe player, no re-hosting).
+    videoSource: text("video_source").default("mux").notNull(),
+    youtubeVideoId: text("youtube_video_id"),
     muxStatus: text("mux_status"),
     muxAssetId: text("mux_asset_id").unique(),
     muxUploadId: text("mux_upload_id").unique(),

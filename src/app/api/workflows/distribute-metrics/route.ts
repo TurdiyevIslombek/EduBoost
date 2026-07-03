@@ -1,7 +1,7 @@
 import { serve } from "@upstash/workflow/nextjs";
 import { db } from "@/db";
 import { scheduledMetrics, videos } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 
 interface DistributionEvent {
   scheduleId: string;
@@ -75,25 +75,31 @@ export const { POST } = serve<DistributionEvent>(async (context) => {
       likesToAdd = Math.min(likesToAdd, remainingLikes);
 
       if (viewsToAdd > 0 || likesToAdd > 0) {
-        const [currentVideo] = await db
-          .select()
-          .from(videos)
-          .where(eq(videos.id, schedule.videoId))
-          .limit(1);
+        // Advance the schedule with an optimistic lock so a concurrent
+        // runner (the cron fallback or "Run Scheduler Now") can't apply the
+        // same tick twice. If someone else advanced it since we read it,
+        // skip — the next tick recalculates from fresh data.
+        const claimed = await db.update(scheduledMetrics).set({
+          appliedViews: schedule.appliedViews + viewsToAdd,
+          appliedLikes: schedule.appliedLikes + likesToAdd,
+          updatedAt: now,
+        }).where(and(
+          eq(scheduledMetrics.id, scheduleId),
+          eq(scheduledMetrics.isActive, true),
+          eq(scheduledMetrics.appliedViews, schedule.appliedViews),
+          eq(scheduledMetrics.appliedLikes, schedule.appliedLikes),
+        )).returning({ id: scheduledMetrics.id });
 
-        if (currentVideo) {
-          await db.update(videos).set({
-            viewCountOverride: currentVideo.viewCountOverride + viewsToAdd,
-            likeCountOverride: currentVideo.likeCountOverride + likesToAdd,
-            updatedAt: now,
-          }).where(eq(videos.id, schedule.videoId));
-
-          await db.update(scheduledMetrics).set({
-            appliedViews: schedule.appliedViews + viewsToAdd,
-            appliedLikes: schedule.appliedLikes + likesToAdd,
-            updatedAt: now,
-          }).where(eq(scheduledMetrics.id, scheduleId));
+        if (claimed.length === 0) {
+          return { continue: true, viewsAdded: 0, likesAdded: 0 };
         }
+
+        // Atomic increment — never read-modify-write the video counters.
+        await db.update(videos).set({
+          viewCountOverride: sql`${videos.viewCountOverride} + ${viewsToAdd}`,
+          likeCountOverride: sql`${videos.likeCountOverride} + ${likesToAdd}`,
+          updatedAt: now,
+        }).where(eq(videos.id, schedule.videoId));
       }
 
       // Check if we are fully done

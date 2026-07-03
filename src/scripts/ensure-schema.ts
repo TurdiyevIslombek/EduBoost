@@ -16,6 +16,9 @@ async function main() {
     await db.execute(sql`ALTER TABLE "videos" ADD COLUMN IF NOT EXISTS "view_count_override" integer NOT NULL DEFAULT 0`);
     await db.execute(sql`ALTER TABLE "videos" ADD COLUMN IF NOT EXISTS "like_count_override" integer NOT NULL DEFAULT 0`);
     await db.execute(sql`ALTER TABLE "videos" ADD COLUMN IF NOT EXISTS "comment_count_override" integer NOT NULL DEFAULT 0`);
+    // YouTube-sourced videos (embedded, not uploaded to Mux).
+    await db.execute(sql`ALTER TABLE "videos" ADD COLUMN IF NOT EXISTS "video_source" text NOT NULL DEFAULT 'mux'`);
+    await db.execute(sql`ALTER TABLE "videos" ADD COLUMN IF NOT EXISTS "youtube_video_id" text`);
     await db.execute(sql`ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "subscriber_count_override" integer NOT NULL DEFAULT 0`);
     await db.execute(sql`ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "last_seen_at" timestamp DEFAULT NOW()`);
 

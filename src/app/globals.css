@@ -417,8 +417,66 @@ body {
   * {
     @apply border-border;
   }
+  html {
+    scroll-behavior: smooth;
+  }
   body {
     @apply bg-background text-foreground antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  /* Brand-colored text selection */
+  ::selection {
+    background-color: rgb(16 185 129 / 0.25);
+  }
+  /* Subtle, professional scrollbar (WebKit) */
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background-color: rgb(16 185 129 / 0.25);
+    border-radius: 9999px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: rgb(16 185 129 / 0.45);
+  }
+}
+
+/* Respect users (and low-power devices) that ask for less motion — the
+   decorative 3D/blob/orbit animations become static, content stays visible. */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  .animate-blob,
+  .animate-float,
+  .animate-float-delay-1,
+  .animate-float-delay-2,
+  .animate-float-delay-3,
+  .animate-gradient,
+  .animate-pulse-glow,
+  .animate-tilt-3d,
+  .animate-float-3d,
+  .animate-orbit,
+  .animate-orbit-reverse,
+  .animate-spin-slow,
+  .animate-depth-pulse {
+    animation: none !important;
+  }
+  .animate-fade-in-up,
+  .animate-fade-in,
+  .animate-scale-in,
+  .animate-slide-in-left,
+  .animate-slide-in-right,
+  .animate-card-entrance {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
   }
 }
 
@@ -458,5 +516,35 @@ body {
 
   .glass-dark {
     @apply bg-slate-900/80 backdrop-blur-xl border border-white/10;
+  }
+
+  /* Interactive 3D card: lifts and tilts toward the viewer on hover.
+     Pair with a parent .perspective-1000 for a stronger effect. */
+  .card-3d {
+    @apply transition-all duration-300 will-change-transform;
+    transform-style: preserve-3d;
+  }
+  .card-3d:hover {
+    transform: perspective(1000px) rotateX(2deg) rotateY(-2deg) translateY(-4px);
+    @apply shadow-2xl shadow-emerald-500/10;
+  }
+
+  /* Shimmer for skeleton loading states */
+  .shimmer {
+    position: relative;
+    overflow: hidden;
+  }
+  .shimmer::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.5), transparent);
+    animation: shimmer-slide 1.8s infinite;
+  }
+  @keyframes shimmer-slide {
+    100% {
+      transform: translateX(100%);
+    }
   }
 }

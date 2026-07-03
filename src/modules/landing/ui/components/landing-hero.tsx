@@ -21,7 +21,7 @@ export const LandingHero = () => {
         {/* Orbiting ring 2 - reverse */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px]">
           <div className="animate-orbit-reverse">
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-cyan-400 to-blue-500 shadow-lg shadow-cyan-500/30 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-cyan-400 to-teal-500 shadow-lg shadow-cyan-500/30 flex items-center justify-center">
               <StarIcon className="w-4 h-4 text-white" />
             </div>
           </div>

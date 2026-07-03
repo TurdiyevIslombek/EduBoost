@@ -164,7 +164,9 @@ const FormSectionSuspense = ({videoId}: FormSectionProps) => {
 
     // Auto-poll for video processing status
     useEffect(() => {
-        const shouldPollStatus = video.muxStatus !== "ready" || video.muxTrackStatus !== "ready";
+        // YouTube-sourced videos have no Mux pipeline, so never poll for them.
+        const shouldPollStatus = video.videoSource !== "youtube" &&
+            (video.muxStatus !== "ready" || video.muxTrackStatus !== "ready");
         
         if (shouldPollStatus && !pollingRef.current && pollingType !== 'ai') {
             // Start polling for processing status (only if not already polling for AI)
@@ -537,6 +539,7 @@ const FormSectionSuspense = ({videoId}: FormSectionProps) => {
                                         <div className="aspect-video overflow-hidden relative">
                                             <VideoPlayer
                                                 playbackId={video.muxPlaybackId}
+                                                youtubeVideoId={video.youtubeVideoId}
                                                 thumbnailUrl={video.thumbnailUrl}
                                             />
                                         </div>

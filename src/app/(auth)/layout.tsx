@@ -1,6 +1,13 @@
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowLeftIcon, BookOpenIcon, UsersIcon, AwardIcon } from "lucide-react";
+import type { Metadata } from "next";
+
+// Auth screens are thin, duplicate-looking pages — keep them out of Google's
+// index so they never compete with the real landing page.
+export const metadata: Metadata = {
+  robots: { index: false, follow: true },
+};
 
 interface LayoutProps {
   children: React.ReactNode;

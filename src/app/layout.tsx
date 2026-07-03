@@ -24,9 +24,10 @@ export const metadata: Metadata = {
   description: "EduBoost (EduBoostOnline) is the best online learning platform to boost your education with high-quality video courses and tutorials. Learn at eduboostonline.com",
   keywords: ["eduboost", "eduboostonline", "edu boost", "eduboost online", "education", "online learning", "courses", "tutorials", "video courses"],
   metadataBase: new URL(SITE_URL),
-  alternates: {
-    canonical: "/",
-  },
+  // NOTE: no global `alternates.canonical` here — a root-level canonical is
+  // inherited by every page and tells Google they are all duplicates of "/".
+  // Each indexable page declares its own canonical instead.
+  applicationName: "EduBoost",
   manifest: "/site.webmanifest",
   openGraph: {
     title: "EduBoost - Online Learning Platform",
@@ -65,7 +66,11 @@ export const metadata: Metadata = {
     google: "3ZSE8oN76hvrPehAufQRY2j31MF1Mf5ZU_zSPGPVufo",
   },
   icons: {
-    icon: "/favicon.ico",
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/android-chrome-192x192.png", type: "image/png", sizes: "192x192" },
+      { url: "/android-chrome-512x512.png", type: "image/png", sizes: "512x512" },
+    ],
     apple: "/apple-touch-icon.png",
   },
 };

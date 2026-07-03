@@ -1,4 +1,10 @@
 {
+  "crons": [
+    {
+      "path": "/api/cron/metrics",
+      "schedule": "0 3 * * *"
+    }
+  ],
   "headers": [
     {
       "source": "/api/(.*)",
@@ -73,6 +79,24 @@
       ]
     },
     {
+      "source": "/sign-in(.*)",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, follow"
+        }
+      ]
+    },
+    {
+      "source": "/sign-up(.*)",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, follow"
+        }
+      ]
+    },
+    {
       "source": "/(.*)",
       "headers": [
         {
@@ -90,6 +114,18 @@
         {
           "key": "X-Frame-Options",
           "value": "SAMEORIGIN"
+        },
+        {
+          "key": "Content-Security-Policy",
+          "value": "frame-ancestors 'self'; base-uri 'self'; object-src 'none'"
+        },
+        {
+          "key": "Cross-Origin-Opener-Policy",
+          "value": "same-origin-allow-popups"
+        },
+        {
+          "key": "X-DNS-Prefetch-Control",
+          "value": "on"
         },
         {
           "key": "Permissions-Policy",

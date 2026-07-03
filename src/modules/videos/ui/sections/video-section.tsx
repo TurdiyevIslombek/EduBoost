@@ -58,17 +58,18 @@ const VideoSectionSuspense = ({videoId}: VideoSectionProps) => {
         <>
             <div className={cn(
                 "aspect-video bg-black rounded-xl overflow-hidden relative",
-                video.muxStatus !== "ready" && "rounded-b-none"
+                video.videoSource !== "youtube" && video.muxStatus !== "ready" && "rounded-b-none"
             )}>
-                <VideoPlayer 
+                <VideoPlayer
                     autoPlay
                     onPlay={handlePlay}
                     playbackId={video.muxPlaybackId}
+                    youtubeVideoId={video.youtubeVideoId}
                     thumbnailUrl={video.thumbnailUrl}
                 />
 
             </div>
-            <VideoBanner status={video.muxStatus}/>
+            {video.videoSource !== "youtube" && <VideoBanner status={video.muxStatus}/>}
             <VideoTopRow video={video}/>
         </>
 

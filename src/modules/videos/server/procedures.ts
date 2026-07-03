@@ -8,6 +8,7 @@ import { TRPCError } from "@trpc/server";
 import {z} from "zod";
 import { UTApi } from "uploadthing/server";
 import { workflow } from "@/lib/workflow";
+import { extractYoutubeId, fetchYoutubeOEmbed, youtubeThumbnail } from "@/lib/youtube";
 
 const TRENDING_CACHE_PREFIX = "videos:trending:v1";
 const HOME_CACHE_PREFIX = "videos:home:v1";
@@ -628,6 +629,52 @@ export const videosRouter = createTRPCRouter({
             return updatedVideo;
         }),
 
+
+    createFromYoutube: protectedProcedure
+        .input(z.object({
+            url: z.string().min(1).max(500),
+            title: z.string().max(200).optional(),
+        }))
+        .mutation(async ({ ctx, input }) => {
+            const { id: userId } = ctx.user;
+
+            const youtubeId = extractYoutubeId(input.url);
+            if (!youtubeId) {
+                throw new TRPCError({
+                    code: "BAD_REQUEST",
+                    message: "That doesn't look like a valid YouTube link.",
+                });
+            }
+
+            // Verify the video exists and is embeddable, and grab its real
+            // title/thumbnail so the new video looks complete immediately.
+            let meta;
+            try {
+                meta = await fetchYoutubeOEmbed(youtubeId);
+            } catch (error) {
+                throw new TRPCError({
+                    code: "BAD_REQUEST",
+                    message: error instanceof Error ? error.message : "Could not load that YouTube video.",
+                });
+            }
+
+            const [video] = await db
+                .insert(videos)
+                .values({
+                    userId,
+                    title: input.title?.trim() || meta.title,
+                    videoSource: "youtube",
+                    youtubeVideoId: youtubeId,
+                    thumbnailUrl: meta.thumbnailUrl ?? youtubeThumbnail(youtubeId),
+                    // No Mux pipeline — mark ready so it behaves like a finished
+                    // upload everywhere (feeds, banner, sitemap).
+                    muxStatus: "ready",
+                    visibility: "private",
+                })
+                .returning();
+
+            return { video };
+        }),
 
     create: protectedProcedure.mutation(async ({ctx}) => {
         const {id: userId} = ctx.user;

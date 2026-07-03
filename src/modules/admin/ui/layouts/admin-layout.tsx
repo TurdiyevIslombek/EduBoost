@@ -1,49 +1,29 @@
 "use client";
 
-import { trpc } from "@/trpc/client";
-import { AdminSidebar } from "../components/admin-sidebar";
+import { AdminSidebar, AdminMobileNav } from "../components/admin-sidebar";
 import { AdminNavbar } from "../components/admin-navbar";
 import { AdminErrorBoundary } from "@/components/admin-error-boundary";
-import { redirect } from "next/navigation";
-import { useEffect } from "react";
 
 interface AdminLayoutProps {
   children: React.ReactNode;
 }
 
+// Pure UI shell — admin access is enforced server-side in
+// src/app/(admin)/layout.tsx before this ever renders.
 export const AdminLayout = ({ children }: AdminLayoutProps) => {
-  // Admin status is resolved server-side from the ADMIN_EMAILS allowlist.
-  // This only gates the UI; every admin procedure is still guarded by
-  // `requireAdmin` on the server.
-  const { data: isAdmin, isLoading } = trpc.admin.isAdmin.useQuery(undefined, {
-    staleTime: 5 * 60 * 1000,
-    retry: false,
-  });
-
-  useEffect(() => {
-    if (!isLoading && !isAdmin) {
-      redirect("/");
-    }
-  }, [isAdmin, isLoading]);
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-emerald-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-emerald-600"></div>
-      </div>
-    );
-  }
-
-  if (!isAdmin) {
-    return null;
-  }
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-emerald-50">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-emerald-50/70 relative">
+      {/* Ambient depth blobs (GPU-cheap, pointer-transparent) */}
+      <div className="pointer-events-none fixed inset-0 overflow-hidden" aria-hidden>
+        <div className="absolute -top-32 -right-32 w-96 h-96 bg-emerald-200/30 rounded-full blur-3xl" />
+        <div className="absolute bottom-0 -left-40 w-[30rem] h-[30rem] bg-teal-200/25 rounded-full blur-3xl" />
+      </div>
+
       <AdminNavbar />
-      <div className="flex pt-16">
+      <div className="flex pt-16 relative">
         <AdminSidebar />
-        <main className="flex-1 overflow-y-auto bg-transparent p-6 ml-64">
+        <main className="flex-1 overflow-y-auto bg-transparent p-4 sm:p-6 lg:ml-64 min-w-0">
+          <AdminMobileNav />
           <div className="max-w-7xl mx-auto">
             <AdminErrorBoundary>
               {children}
