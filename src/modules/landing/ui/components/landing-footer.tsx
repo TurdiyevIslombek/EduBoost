@@ -58,6 +58,18 @@ export const LandingFooter = () => {
             <p className="flex items-center gap-1">
               Made with <HeartIcon className="w-3.5 h-3.5 text-emerald-500 fill-emerald-500" /> for students
             </p>
+            <span className="hidden sm:block">•</span>
+            <p>
+              Built by{" "}
+              <a
+                href="https://turdiyevislombek.github.io"
+                target="_blank"
+                rel="author noopener noreferrer"
+                className="text-slate-600 hover:text-emerald-600 transition-colors font-medium"
+              >
+                Islombek Turdiyev
+              </a>
+            </p>
           </div>
         </div>
       </div>

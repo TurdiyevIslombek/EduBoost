@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import {Inter} from "next/font/google";
 import {ClerkProvider} from "@clerk/nextjs"
 import { SpeedInsights } from "@vercel/speed-insights/next"
-import Script from "next/script";
 import "./globals.css";
 import { TRPCProvider } from "@/trpc/client";
 import { Toaster } from "@/components/ui/sonner";
@@ -28,6 +27,8 @@ export const metadata: Metadata = {
   // inherited by every page and tells Google they are all duplicates of "/".
   // Each indexable page declares its own canonical instead.
   applicationName: "EduBoost",
+  authors: [{ name: "Islombek Turdiyev", url: "https://turdiyevislombek.github.io" }],
+  creator: "Islombek Turdiyev",
   manifest: "/site.webmanifest",
   openGraph: {
     title: "EduBoost - Online Learning Platform",
@@ -85,6 +86,18 @@ const organizationJsonLd = {
   description:
     "EduBoost is a free peer-to-peer online learning platform where students teach students through high-quality video courses.",
   sameAs: ["https://t.me/Islombek_0072"],
+  founder: {
+    "@type": "Person",
+    name: "Islombek Turdiyev",
+    url: "https://turdiyevislombek.github.io",
+    jobTitle: "Founder & Developer",
+    sameAs: [
+      "https://turdiyevislombek.github.io",
+      "https://github.com/TurdiyevIslombek",
+      "https://huggingface.co/IslombekT",
+      "https://www.linkedin.com/in/islombek-turdiyev",
+    ],
+  },
 };
 
 const websiteJsonLd = {
@@ -117,16 +130,18 @@ export default function RootLayout({
         <body
           className={inter.className}
         >
-          <Script
+          {/* Plain <script> tags (not next/script): the App Router does not
+              render inline beforeInteractive scripts into the HTML, so JSON-LD
+              via next/script is invisible to crawlers reading the raw page.
+              This matches how the video pages emit their VideoObject schema. */}
+          <script
             id="ld-organization"
             type="application/ld+json"
-            strategy="beforeInteractive"
             dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
           />
-          <Script
+          <script
             id="ld-website"
             type="application/ld+json"
-            strategy="beforeInteractive"
             dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
           />
           <ThemeProvider

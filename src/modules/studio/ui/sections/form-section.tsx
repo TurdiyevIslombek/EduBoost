@@ -188,7 +188,7 @@ const FormSectionSuspense = ({videoId}: FormSectionProps) => {
                 setPollingType(null);
             }
         };
-    }, [video.muxStatus, video.muxTrackStatus, pollingType, videoId, utils]);
+    }, [video.videoSource, video.muxStatus, video.muxTrackStatus, pollingType, videoId, utils]);
 
     // Stop polling when component unmounts
     useEffect(() => {

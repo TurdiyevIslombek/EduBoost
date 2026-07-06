@@ -68,6 +68,18 @@ const AboutPage = () => {
               <p className="text-lg text-slate-600 mt-6">
                 Our mission is to build a community where learning is collaborative, impactful, and recognized. Every course taught on EduBoost contributes to a stronger network of young minds helping each other achieve their goals.
               </p>
+              <p className="text-lg text-slate-600 mt-6">
+                EduBoost was built by{" "}
+                <a
+                  href="https://turdiyevislombek.github.io"
+                  target="_blank"
+                  rel="author noopener noreferrer"
+                  className="text-emerald-600 hover:text-emerald-700 font-medium transition-colors"
+                >
+                  Islombek Turdiyev
+                </a>
+                , its founder and sole developer.
+              </p>
             </div>
           </div>
 
