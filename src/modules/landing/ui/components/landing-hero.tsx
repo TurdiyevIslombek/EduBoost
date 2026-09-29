@@ -2,7 +2,8 @@
 
 import { Button } from "@/components/ui/button";
 import { SignUpButton } from "@clerk/nextjs";
-import { ArrowRightIcon, SparklesIcon, CheckCircleIcon, BookOpenIcon, UsersIcon, AwardIcon, GraduationCapIcon, StarIcon } from "lucide-react";
+import { ArrowRightIcon, SparklesIcon, CheckCircleIcon, BookOpenIcon, UsersIcon, AwardIcon, GraduationCapIcon, StarIcon, VideoIcon } from "lucide-react";
+import Link from "next/link";
 import { BrowserMockup } from "./browser-mockup";
 
 export const LandingHero = () => {
@@ -50,13 +51,24 @@ export const LandingHero = () => {
 
         {/* CTA */}
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-in-up animation-delay-300">
+          <Button
+            asChild
+            size="lg"
+            className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl px-8 py-6 text-base font-semibold shadow-lg shadow-emerald-600/30 transition-all hover:shadow-xl hover:shadow-emerald-600/40 hover:scale-105 group animate-pulse-glow"
+          >
+            <Link href="/home">
+              Start Learning Free
+              <ArrowRightIcon className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
+            </Link>
+          </Button>
           <SignUpButton>
             <Button
               size="lg"
-              className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl px-8 py-6 text-base font-semibold shadow-lg shadow-emerald-600/30 transition-all hover:shadow-xl hover:shadow-emerald-600/40 hover:scale-105 group animate-pulse-glow"
+              variant="outline"
+              className="rounded-xl px-8 py-6 text-base font-semibold border-emerald-200 text-emerald-700 bg-white/70 hover:bg-emerald-50 hover:text-emerald-800"
             >
-              Start Learning Free
-              <ArrowRightIcon className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
+              <VideoIcon className="mr-2 w-5 h-5" />
+              Start Teaching
             </Button>
           </SignUpButton>
         </div>
@@ -74,20 +86,6 @@ export const LandingHero = () => {
               ))}
             </div>
             <span className="font-medium">1,000+ students</span>
-          </div>
-          <div className="hidden sm:block w-px h-5 bg-slate-200"></div>
-          <div className="flex items-center gap-1.5">
-            {[1, 2, 3, 4, 5].map((i) => (
-              <svg
-                key={i}
-                className="w-4 h-4 text-amber-400 fill-current animate-scale-in"
-                style={{ animationDelay: `${500 + i * 50}ms` }}
-                viewBox="0 0 20 20"
-              >
-                <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" />
-              </svg>
-            ))}
-            <span className="ml-1 font-medium">4.9/5 rating</span>
           </div>
           <div className="hidden sm:block w-px h-5 bg-slate-200"></div>
           <div className="flex items-center gap-1.5">

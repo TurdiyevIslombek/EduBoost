@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { SignInButton, SignUpButton } from "@clerk/nextjs";
+import { SignInButton } from "@clerk/nextjs";
 import { MenuIcon, XIcon, ArrowRightIcon } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -34,6 +34,12 @@ export const LandingNavbar = () => {
           {/* Center Links (desktop) */}
           <div className="hidden md:flex items-center gap-8">
             <Link
+              href="/home"
+              className="text-slate-600 hover:text-emerald-600 text-sm font-medium transition-colors"
+            >
+              Explore
+            </Link>
+            <Link
               href="#features"
               className="text-slate-600 hover:text-emerald-600 text-sm font-medium transition-colors"
             >
@@ -65,15 +71,16 @@ export const LandingNavbar = () => {
                   Sign In
                 </Button>
               </SignInButton>
-              <SignUpButton>
-                <Button
-                  size="sm"
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl px-5 font-medium shadow-md shadow-emerald-600/25"
-                >
+              <Button
+                asChild
+                size="sm"
+                className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl px-5 font-medium shadow-md shadow-emerald-600/25"
+              >
+                <Link href="/home">
                   Get Started
                   <ArrowRightIcon className="ml-1.5 w-4 h-4" />
-                </Button>
-              </SignUpButton>
+                </Link>
+              </Button>
             </div>
 
             {/* Mobile menu toggle */}
@@ -94,6 +101,12 @@ export const LandingNavbar = () => {
         {/* Mobile dropdown panel */}
         {open && (
           <div className="md:hidden pt-4 pb-2 space-y-2 border-t border-emerald-100 mt-4">
+            <Link
+              href="/home"
+              className="block px-3 py-2.5 text-slate-700 font-medium hover:bg-emerald-50 rounded-xl"
+            >
+              Explore
+            </Link>
             <Link
               href="#features"
               className="block px-3 py-2.5 text-slate-700 font-medium hover:bg-emerald-50 rounded-xl"
@@ -122,14 +135,13 @@ export const LandingNavbar = () => {
                   Sign In
                 </Button>
               </SignInButton>
-              <SignUpButton>
-                <Button
-                  size="sm"
-                  className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-medium"
-                >
-                  Get Started
-                </Button>
-              </SignUpButton>
+              <Button
+                asChild
+                size="sm"
+                className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-medium"
+              >
+                <Link href="/home">Get Started</Link>
+              </Button>
             </div>
           </div>
         )}

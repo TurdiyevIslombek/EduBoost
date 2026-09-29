@@ -2,7 +2,8 @@ import { LandingView } from "@/modules/landing/ui/views/landing-view";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "EduBoost - Free Online Learning Platform by Students",
+  // absolute: skip the root "%s | EduBoost" template so the brand isn't doubled.
+  title: { absolute: "EduBoost - Free Online Learning Platform by Students" },
   description: "EduBoost is a free online learning platform where students teach students. Create and watch video courses, build your teaching portfolio, and boost your education at eduboostonline.com.",
   alternates: { canonical: "/" },
   openGraph: {

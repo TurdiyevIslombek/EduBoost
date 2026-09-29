@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowLeftIcon, BookOpenIcon, UsersIcon, AwardIcon } from "lucide-react";
 import type { Metadata } from "next";
+import { AuthMascot } from "@/modules/auth/ui/components/auth-mascot";
 
 // Auth screens are thin, duplicate-looking pages — keep them out of Google's
 // index so they never compete with the real landing page.
@@ -16,13 +17,14 @@ interface LayoutProps {
 const Layout = ({ children }: LayoutProps) => {
   return (
     <div className="min-h-screen flex">
-      {/* Left Side - Emerald Gradient Background with Branding */}
-      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-emerald-600 via-teal-600 to-cyan-700 flex-col justify-between p-12 relative overflow-hidden">
-        {/* Animated Background Elements */}
-        <div className="absolute inset-0 opacity-20">
-          <div className="absolute top-20 left-20 w-72 h-72 bg-white rounded-full blur-3xl animate-blob" />
-          <div className="absolute bottom-40 right-20 w-96 h-96 bg-teal-300 rounded-full blur-3xl animate-blob animation-delay-2000" />
-          <div className="absolute top-1/2 left-1/3 w-64 h-64 bg-cyan-300 rounded-full blur-3xl animate-blob animation-delay-4000" />
+      {/* Left Side - Emerald Gradient Background with 3D mascot */}
+      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-emerald-700 via-teal-700 to-cyan-800 flex-col justify-between p-12 relative overflow-hidden">
+        {/* Light, dot grid and animated glow */}
+        <div aria-hidden="true" className="absolute inset-0 pointer-events-none">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_40%,rgba(167,243,208,0.28),transparent_60%)]" />
+          <div className="absolute inset-0 opacity-[0.14] bg-[radial-gradient(rgba(255,255,255,0.9)_1px,transparent_1px)] [background-size:22px_22px] [mask-image:radial-gradient(ellipse_at_center,black_25%,transparent_75%)]" />
+          <div className="absolute -top-24 -left-24 w-96 h-96 bg-emerald-400/20 rounded-full blur-3xl animate-blob" />
+          <div className="absolute -bottom-32 -right-24 w-[28rem] h-[28rem] bg-cyan-300/20 rounded-full blur-3xl animate-blob animation-delay-2000" />
         </div>
 
         <div className="relative z-10">
@@ -40,45 +42,32 @@ const Layout = ({ children }: LayoutProps) => {
           </Link>
         </div>
 
-        <div className="flex-1 flex flex-col justify-center max-w-md relative z-10">
-          <h1 className="text-4xl font-bold text-white mb-6 leading-tight tracking-tight">
+        <div className="flex-1 flex flex-col items-center justify-center text-center relative z-10">
+          <AuthMascot />
+
+          <h1 className="mt-2 text-4xl xl:text-[2.75rem] font-bold text-white leading-tight tracking-tight">
             Master Your Learning Journey
           </h1>
-          <p className="text-emerald-100 text-lg mb-12 leading-relaxed">
+          <p className="mt-4 max-w-md text-emerald-50/85 text-lg leading-relaxed">
             Join a community where students teach students. Create courses, share knowledge, and build your future.
           </p>
 
           {/* Features */}
-          <div className="space-y-4 mb-12">
+          <ul className="mt-8 flex flex-wrap justify-center gap-3">
             {[
               { icon: BookOpenIcon, text: "50+ Free Lessons" },
-              { icon: UsersIcon, text: "1,000+ Active Students" },
+              { icon: UsersIcon, text: "1,000+ Students" },
               { icon: AwardIcon, text: "Build Your Portfolio" },
-            ].map((item, i) => (
-              <div key={i} className="flex items-center gap-3 text-white/90">
-                <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
-                  <item.icon className="w-5 h-5" />
-                </div>
-                <span className="font-medium">{item.text}</span>
-              </div>
+            ].map((item) => (
+              <li
+                key={item.text}
+                className="flex items-center gap-2 rounded-full bg-white/10 border border-white/15 backdrop-blur-sm px-4 py-2 text-sm font-medium text-white/90"
+              >
+                <item.icon className="w-4 h-4 text-emerald-200" />
+                {item.text}
+              </li>
             ))}
-          </div>
-
-          {/* Testimonial */}
-          <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
-            <p className="text-white/90 italic mb-4">
-              &quot;EduBoost transformed how I learn. Teaching others has made me a better student and leader.&quot;
-            </p>
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-white/30 to-white/10 flex items-center justify-center text-white font-semibold">
-                A
-              </div>
-              <div>
-                <p className="text-white font-semibold">Alex Chen</p>
-                <p className="text-emerald-200 text-sm">Computer Science Student</p>
-              </div>
-            </div>
-          </div>
+          </ul>
         </div>
 
         <p className="text-emerald-200/60 text-sm relative z-10">

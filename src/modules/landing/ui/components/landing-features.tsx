@@ -192,9 +192,9 @@ export const LandingFeatures = () => {
                   </div>
                 </div>
                 <div className="text-center p-4 bg-white/10 rounded-2xl backdrop-blur-sm transition-transform duration-500 hover:[transform:perspective(800px)_rotateY(3deg)_translateZ(15px)]">
-                  <div className="text-5xl font-bold text-white mb-2">4.9</div>
+                  <div className="text-5xl font-bold text-white mb-2">24/7</div>
                   <div className="text-emerald-100 text-sm uppercase tracking-wider font-medium">
-                    Rating
+                    Access
                   </div>
                 </div>
               </div>
